@@ -1,28 +1,45 @@
-#include <stdio.h>
-#include <stdlib.h>
 #include <assert.h>
 #include <memory.h>
 #include "projectA.h"
 
-/*
- * This is a dummy implementation to make sure that everything compiles.
- * You should expand this.
- * */
+// #define NDEBUG
 
-void init_block(block** bptr)
+// an array of blocks, body of the buffer pool. 
+block* bufferPool; 
+
+// a direct-address table to store fd-metadata pairs.
+metadata* fdMetaTable;
+
+// global variable used for buffer pool replacement policy. 
+// From 1 to BUFFERSIZE.
+int current;
+
+void init_block(block* blockPtr)
 {
-	*bptr = malloc(sizeof(block));
-	(*bptr)->data = malloc(FRAMESIZE);
-	(*bptr)->dirty=0;
-	(*bptr)->pinCount=0;
+	blockPtr->pinCount = 0;
+	blockPtr->dirty = 0;
+	blockPtr->fd =  -1;
+	blockPtr->blockID = 0;
+	blockPtr->referenced = 1;
+	blockPtr->freeSpace = -1;
+	blockPtr->pageLocation = NULL;
+	blockPtr->data = NULL;
+
+	#ifndef NDEBUG
+		printf("************ init_block ************\n");
+	#endif
 }
 
-
-void populate_block(block* blockPtr);
-
-
 void BM_init(){
-	fprintf(stderr, "Calling BM_init");
+	// create an array of blocks as buffer pool.
+	bufferPool = (block *)malloc(BUFFERSIZE * sizeof(block));
+	// initialize each block in the buffer poll.
+	for(int i = 0; i < BUFFERSIZE; ++i) {
+		init_block(&bufferPool[i]);
+	}
+	#ifndef NDEBUG
+		printf("********* BM_init ***********\n");
+	#endif
 }
 
 errCode BM_create_file( const char *filename ) {
@@ -42,31 +59,20 @@ errCode BM_close_file( fileDesc fd ) {
 
 errCode BM_get_first_block( fileDesc fd, block** blockPtr ) {
 	fprintf(stderr, "Attempting to read first block from file %d\n", fd);
-	block* new_pointer = NULL;
-	init_block(&new_pointer);
-	new_pointer->pinCount++;
-	*blockPtr = new_pointer;
+
 	return 0;
 }
 
 
 errCode BM_get_next_block( fileDesc fd, block** blockPtr ) {
 	fprintf(stderr, "Attempting to get next block from file %d\n", fd);
-	block* new_pointer = NULL;
-	init_block(&new_pointer);
-	new_pointer->pinCount++;
-	*blockPtr = new_pointer;
+
 	return 0;
 }
 
 errCode BM_get_this_block( fileDesc fd, int blockID, block** blockPtr ) {
 	fprintf(stderr, "Attempting to get block %d from file %d\n", blockID, fd);
-	block* new_pointer = NULL;
-	init_block(&new_pointer);
-	new_pointer->pinCount++;
 
-	populate_block(new_pointer);
-	*blockPtr = new_pointer;
 	return 0;
 }
 
@@ -82,7 +88,7 @@ errCode BM_dispose_block( fileDesc fd, int blockID ) {
 
 errCode BM_unpin_block( block* blockPtr ) {
 	fprintf(stderr, "Unpinning block\n");
-	blockPtr->pinCount--;
+
 	return 0;
 }
 

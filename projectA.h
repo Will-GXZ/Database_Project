@@ -5,21 +5,35 @@
 #define PROJECTA_H
 
 #define FRAMESIZE 4096
-
+#define BUFFERSIZE 10
 
 /*The key for accessing a file's metadata,
  *like its physical location, # blocks, ...*/
 typedef int fileDesc;
+typedef unsigned char byte;
 typedef int errCode; 
 typedef struct _block{
     int pinCount;
     int dirty;
     char* data; // void data[FRAMESIZE];
     fileDesc fd;
-    int blockID; // possible other ways to do the same thing
-/* ... more metadata might be needed */
+    int blockID; //header pages have negative ID. From -1 to -n.
+    byte referenced;//used for buffer replacement policy.
+    int freeSpace; //in terms of #entries.
+    char* pageLocation; //location on disk of this page.
 } block;
 
+
+typedef struct _metadata {
+    char* headerLocation; // the location of the first header page.
+    int blockNumber; // the number of total page the file has
+} metadata;
+
+// global variable used for buffer pool replacement policy. 
+// From 1 to BUFFERSIZE.
+extern int current;
+extern block* bufferPool;
+extern metadata* fdMetaTable;
 
 /*Perform necessary initializations for the buffer layer. 
  *This probably involves creating a buffer pool with a specified
