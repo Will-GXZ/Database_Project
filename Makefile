@@ -5,7 +5,7 @@
 ##                                                ##
 ####################################################
 CC		= gcc
-CFLAGS	= -Wall -Wextra -O0 -ggdb
+CFLAGS	=-std=c99 -Wall -Wextra -O0 -ggdb
 
 test:		projectA.o my_test.o
 	@echo '****************  Using Makefile to compile ****************'
