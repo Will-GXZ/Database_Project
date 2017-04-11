@@ -68,27 +68,18 @@ void BM_init(){
 }
 
 // helper function, generate full path of a file from filename and ID.
-void get_location(char *str, const char *filename, const int blockID) {
-	char ID[(int)log10(INT_MAX) + 1]; 
-	sprintf(ID, "%d", blockID);
+void get_location(char *str, const char *filename, const char *postfix) {
 	strcpy(str, "./data/");
 	strcat(str, filename);
 	strcat(str, "_");
-	strcat(str, ID);
+	strcat(str, postfix);
 	strcat(str, ".dat");
-}
-
-//helper function, get location of metadata page.
-void get_meta_location(char *dest, const char *filename) {
-	strcpy(dest, "./data/");
-	strcat(dest, filename);
-	strcat(dest, "_meta.dat");
 }
 
 // Create a new header page for the file, and create a metadata page.
 errCode BM_create_file( const char *filename ) {
 	char str[LOCATIONSIZE];
-	get_location(str, filename, -1);
+	get_location(str, filename, "h0");
 
 	#ifdef DEBUG
 		printf("str= %s\n", str);
@@ -103,7 +94,7 @@ errCode BM_create_file( const char *filename ) {
 
 	// create metadata page.
 	char metaLocation[LOCATIONSIZE];
-	get_meta_location(metaLocation, filename);
+	get_location(metaLocation, filename, "meta");
 	fp = fopen(metaLocation, "wb+");
 	if (fp == NULL) { return 1; }
 	int meta[2] = {0, 1};
@@ -171,14 +162,14 @@ errCode buffer_add_block(block **block_2ptr, const void *data, fileDesc fd,\
 // metadata.
 fileDesc BM_open_file( const char *filename ) {
 	char fileLocation[LOCATIONSIZE];
-	get_location(fileLocation, filename, -1);
+	get_location(fileLocation, filename, "h0");
 	FILE *fp = fopen(fileLocation, "rb+");
 	if (fp == NULL) { return -1; }
 	fileDesc fd = fileno(fp);
 	
 	//read metadata from metadata page.
 	char metaLocation[LOCATIONSIZE];
-	get_meta_location(metaLocation, filename);
+	get_location(metaLocation, filename, "meta");
 	FILE *pMeta = fopen(metaLocation, "rb");
 	if (pMeta == NULL) { return -1; }
 	int meta[2];
@@ -212,10 +203,14 @@ errCode BM_close_file( fileDesc fd ) {
 			}
 		}
 	}
+
+	// check the input fd if it is valid (still stored in hash table).
+	if (fdMetaTable[fd - 3].fileName == NULL) { return 3; }
+
 	// write back metadata to metadata page.
 	metadata temp = fdMetaTable[fd - 3];
 	char metaLocation[LOCATIONSIZE];
-	get_meta_location(metaLocation, temp.fileName);
+	get_location(metaLocation, temp.fileName, "meta");
 	FILE *fp = fopen(metaLocation, "wb+");
 	if (fp == NULL) { return 3; }
 	int meta[2] = {temp.blockNumber, temp.headerNumber};
@@ -230,13 +225,51 @@ errCode BM_close_file( fileDesc fd ) {
 
 	//close file using fd.
 	if (close(fd) != 0) { return 3; }
-	return 0;
 
 	#ifdef DEBUG
 		printf("meta page location: %s\n", metaLocation);
 		printf("********** BM_close_file **********\n");
 	#endif
+
+	return 0;		
 }
+
+// helper function, find the block of specific blockID and fd in buffer pool, 
+// if success, return 1, else return 0.
+boolean find_buffer_block(block **block_2ptr, fileDesc fd, int blockID) {
+	for (int i = 0; i < BUFFERSIZE; ++i) {
+		if (bufferPool[i].blockID == blockID && bufferPool[i].fd == fd) {
+			*block_2ptr = bufferPool + i;
+			return 1;
+		}
+	}
+	return 0;
+}
+
+// // helper function, when the block is not in buffer pool, we need to call this
+// //function to find the location of that page in disk.
+// errCode find_page_location(char *location, int blockID, fileDesc fd) {
+// 	// calculate the number of locations of pages in a header file
+// 	int m = (4096 - sizeof(int) - LOCATIONSIZE - 1) / (LOCATIONSIZE + 1);
+// 	// calculate offsets
+// 	int headerNum = blockID / m; // index of header page that contains block
+// 	int pos = (blockID % m) * LOCATIONSIZE; // offset of actual location string
+// 	int indicatorPos = m * LOCATIONSIZE + blockID % m; //indicator map show if the record of a blockID is empty
+// 	int nextHeaderLocationPos = m * (LOCATIONSIZE + 1) + sizeof(int); //offset of the location of next header page
+
+// 	// loop to find location of the header page that contains the given blockID
+// 	char headerLocation[LOCATIONSIZE] = 0;
+// 	if (fdMetaTable[fd - 3].fileName == NULL) { return 4; }
+// 	get_location(headerLocation, );
+
+
+// 	#ifdef DEBUG
+// 		printf("m = %d\theaderNum = %d\tpos = %d\tindicatorPos = %d\n", m,\
+// 			headerNum, pos, indicatorPos);
+// 		printf("%s\n", fileName);
+// 		printf("********* find_page_location **********");
+// 	#endif
+// }
 
 errCode BM_get_first_block( fileDesc fd, block** blockPtr ) {
 	fprintf(stderr, "Attempting to read first block from file %d\n", fd);

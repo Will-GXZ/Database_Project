@@ -11,6 +11,7 @@
 
 /*The key for accessing a file's metadata,
  *like its physical location, # blocks, ...*/
+typedef int boolean;
 typedef int fileDesc;
 typedef unsigned char byte;
 typedef int errCode; 
@@ -19,7 +20,7 @@ typedef struct _block{
     int dirty;
     char* data; // void data[FRAMESIZE];
     fileDesc fd;
-    //header pages have negative ID, from -1 to -n. 
+    //start by 0, header pages do not enter buffer pool. 
     int blockID; 
     int referenced;//used for buffer replacement policy.
     int freeSpace; //in terms of #entries.

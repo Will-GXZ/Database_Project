@@ -8,6 +8,7 @@ void test_BM_create_file(const char *filename);
 void test_BM_open_file(void);
 void test_buffer_add_block(void);
 void test_BM_close_file(void);
+void test_find_buffer_block(void);
 
 
 int main(void) {
@@ -19,9 +20,25 @@ int main(void) {
     // test_BM_create_file(str);
     // test_BM_open_file();
     // test_buffer_add_block();
-    test_BM_close_file();
+    // test_BM_close_file();
+    // test_find_buffer_block();
 
     return 0;
+}
+
+void test_find_buffer_block() {
+    BM_init();
+    char str[] = "t1";
+    BM_create_file(str);
+    BM_open_file(str);
+    bufferPool[2].fd = 3;
+    bufferPool[2].blockID = 6;
+    block *blockPtr = NULL;
+    if (find_buffer_block(&blockPtr, 3, 5) == 0) {
+        printf("didn't find this block in buffer pool.");
+    } else {
+        printf("successfully found block: %d  %d\n", blockPtr->fd, blockPtr->blockID);
+    }
 }
 
 void test_BM_close_file() {
@@ -33,7 +50,7 @@ void test_BM_close_file() {
     printf("before: metatable: %d %d %s\n", fdMetaTable[0].blockNumber,\
         fdMetaTable[0].headerNumber, fdMetaTable[0].fileName); 
     
-    if (BM_close_file(4) != 0) { exit(3); }
+    if (BM_close_file(3) != 0) { exit(3); }
 
     printf("aftert: metatable: %d %d %s\n", fdMetaTable[0].blockNumber,\
         fdMetaTable[0].headerNumber, fdMetaTable[0].fileName);    
@@ -95,7 +112,7 @@ void test_BM_init() {
     printf("max_fd = %llu\n", max_fd);
     // should print the max number of fd.
 
-    printf("%p\n", fdMetaTable);
+    printf("metaTable: %p\n", fdMetaTable);
     metadata meta = fdMetaTable[max_fd];
     printf("%p %d\n", meta.fileName, meta.blockNumber);
     // should print 0X0 and 0.
