@@ -2,6 +2,9 @@
 #include <memory.h>
 #include "projectA.h"
 
+
+void populate_block(block* blockPtr);
+
 void test_init_block(void);
 void test_BM_init(void);
 void test_BM_create_file(const char *filename);
@@ -21,6 +24,7 @@ void test_BM_unpin_block(void);
 void test_get_next_ID(void);
 void test_get_prev_ID(void);
 void test_BM_dispose_block(void);
+int given_test_main(void);
 
 int main(void) {
     printf("############ linking successful ###########\n");
@@ -41,10 +45,183 @@ int main(void) {
     // test_BM_unpin_block();
     // test_get_next_ID();
     // test_get_prev_ID();
-    test_BM_dispose_block();
+    // test_BM_dispose_block();
+    given_test_main();
 
     return 0;
 }
+
+// this is the given test main function
+int given_test_main(void) {
+    int err = 0;
+    /*
+    bm init
+    */
+    BM_init();
+
+    printf("===================  Given test: 1 =====================\n");
+    /*
+    create a file 
+    insert pages filled with data
+    close a file
+    */
+    BM_create_file("testing.dat");
+    fileDesc fd = BM_open_file("testing.dat");
+    BM_alloc_block(fd);
+    block* blockPtr=NULL;
+    
+    BM_get_first_block(fd, &blockPtr); // this function will assign blockPtr to a valid block from the BP
+    populate_block(blockPtr);
+    blockPtr->dirty=1; //we just made changes
+    
+    //make sure the loaded frame can actually be swapped out (when the corresponding file is closed).
+    //we do not expect to close a file with pinned blocks
+    BM_unpin_block(blockPtr);   
+    assert(blockPtr->pinCount==0); //pin count should be 0  
+    BM_close_file(fd);
+
+    printf("===================  Given test: 2 =====================\n");
+    /*
+    bm open file
+    loop this stuff
+    bm alloc block
+    bm get first block 
+    insert some data into block
+    bm unpin block
+    end loop
+    bm close file
+    */
+    fd = BM_open_file("testing.dat");
+    int i;
+    for (i = 0; i < 99; i++) {
+        BM_alloc_block(fd);
+    }
+    err = BM_get_first_block(fd, &blockPtr);
+    BM_print_error(err);
+    populate_block(blockPtr);
+    blockPtr->dirty=1; //we just made changes
+    err = BM_unpin_block(blockPtr);
+    BM_print_error(err);
+    assert(blockPtr->pinCount==0); //pin count should be 0  
+    for (i = 0; i < 99; i++) {
+        err = BM_get_next_block(fd, &blockPtr);
+        BM_print_error(err);
+        populate_block(blockPtr);
+        blockPtr->dirty=1; //we just made changes
+        err = BM_unpin_block(blockPtr);
+        BM_print_error(err);
+        assert(blockPtr->pinCount==0); //pin count should be 0  
+    }
+
+    err = BM_get_first_block(fd, &blockPtr);
+    BM_print_error(err);
+
+    //we do not expect to close a file with pinned blocks
+    err = BM_unpin_block(blockPtr);
+    BM_print_error(err);
+    assert(blockPtr->pinCount==0); //pin count should be 0  
+    for (i = 0; i < 99; i++) {
+        err = BM_get_next_block(fd, &blockPtr);
+        BM_print_error(err);
+        //we do not expect to close a file with pinned blocks
+        err = BM_unpin_block(blockPtr);
+        BM_print_error(err);
+        assert(blockPtr->pinCount==0); //pin count should be 0  
+    }
+
+    err = BM_close_file(fd);
+    BM_print_error(err);
+    show_bufferPool();
+    show_fdMetaTable();
+    // file should have 100 blocks now
+
+    printf("===================  Given test: 3 =====================\n");
+    /*
+    open the above file 
+    access pages
+    close the file
+    */
+    char testing_elements[50];
+    fd = BM_open_file("testing.dat");
+    for (i = 0; i < 50; i++) {
+        err = BM_get_this_block(fd, (i * i + i) % 100, &blockPtr);
+        BM_print_error(err);
+        populate_block(blockPtr);
+        testing_elements[i]=blockPtr->data[i];
+        //we do not expect to close a file with pinned blocks
+        blockPtr->dirty=1;
+        err = BM_unpin_block(blockPtr);
+        BM_print_error(err);
+        assert(blockPtr->pinCount==0); //pin count should be 0  
+    }
+    err = BM_close_file(fd);
+    BM_print_error(err);
+    show_bufferPool();
+    show_fdMetaTable();
+
+    printf("===================  Given test: 4 =====================\n");
+    /*
+    bm open speficic file (checks that its opening an existing file not making a new one)
+    bm get blocks and examine data
+    bm close file
+    */
+    
+    fd = BM_open_file("testing.dat");
+    for (i = 0; i < 50; i++) {
+        BM_get_this_block(fd, (i * i + i) % 100, &blockPtr);
+        assert(testing_elements[i]==blockPtr->data[i]);//assert we read the same bytes we wrote
+        BM_unpin_block(blockPtr);
+        assert(blockPtr->pinCount==0); //pin count should be 0  
+    }
+    show_bufferPool();
+    show_fdMetaTable();
+    BM_close_file(fd);
+
+    printf("===================  Given test: 5 =====================\n");
+    /*
+    open the above file 
+    remove pages
+    close the file
+    */
+    fd = BM_open_file("testing.dat");
+    for (i = 0; i < 100; i++) {
+        err = BM_dispose_block(fd, i);
+        BM_print_error(err);
+    }
+    err = BM_close_file(fd);
+    BM_print_error(err);
+    show_bufferPool();
+    show_fdMetaTable();
+
+    printf("=================  Given test: 6 ==================\n");
+    printf("______________________________________________________________\n");
+    printf("Should print error message,");
+    printf(" because now there is no page in this file\n");
+    printf("______________________________________________________________\n");
+    /*
+    bm open speficic file (checks that its opening an existing file not making a new one)
+    bm get first block
+    bm dispose block
+    bm close file
+    */
+
+    fd = BM_open_file("testing.dat");
+    err = BM_get_first_block(fd, &blockPtr);
+    BM_print_error(err);
+    err = BM_unpin_block(blockPtr);
+    BM_print_error(err);
+    assert(blockPtr->pinCount==0); //pin count should be 0  
+    err = BM_dispose_block(fd, 0);
+    BM_print_error(err);
+    err = BM_close_file(fd);
+    BM_print_error(err);    
+    /*
+    all throughout print some errors if there are any.
+    */
+
+    return 0;    
+}
+
 
 void test_BM_dispose_block() {
     int err = 0;
@@ -550,6 +727,23 @@ void test_BM_init() {
     // should print 0X0 and -1.
 
 
+}
+
+void populate_block(block* blockPtr) {
+    
+    //assumes a block retrieved from BP, updates its contents
+    assert(blockPtr!=NULL);
+
+    char* raw_data = malloc(sizeof(char) * FRAMESIZE);
+    int i;
+    char tmp ;
+    for (i = 0; i < FRAMESIZE; i++){
+        tmp=i%78+'0'; 
+        raw_data[i] = tmp;
+    }
+    //here we copy to the contents of the block
+    memcpy(blockPtr->data, raw_data, FRAMESIZE);
+    free(raw_data);
 }
 
 // void test_init_block() {

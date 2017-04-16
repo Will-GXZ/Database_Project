@@ -8,9 +8,11 @@
 # CC      = gcc
 # CFLAGS  =-std=c99 -Wall -Wextra -O0 -ggdb
 
-# compile together with project Part B, not yet came out.
-
-
+main:
+	##########################################################################
+	## compile together with project Part B, not yet came out.              ##
+	## If you want to compile with test .c file with Part A, run: make test ##
+	##########################################################################
 
 test:
 	make -f ./TestMakefile

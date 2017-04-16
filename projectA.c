@@ -8,7 +8,7 @@
 
 #include "projectA.h"
 
-#define DEBUG
+// #define DEBUG
 
 // an array of blocks, body of the buffer pool. 
 block *bufferPool = NULL; 
@@ -412,7 +412,12 @@ errCode BM_get_next_block( fileDesc fd, block** blockPtr ) {
 	char IDstr[LOCATIONSIZE], headerLocation[LOCATIONSIZE], data[FRAMESIZE];
 
 	while (headerID < fdMetaTable[fd - 3].headerNumber) {
-		printf("currentID = %d, headerID = %d,  headerNum = %d\n", fdMetaTable[fd - 3].currentID, headerID, fdMetaTable[fd - 3].headerNumber);
+
+		#ifdef DEBUG
+			printf("currentID = %d, headerID = %d,  headerNum = %d\n", \
+				fdMetaTable[fd - 3].currentID, headerID, fdMetaTable[fd - 3].headerNumber);
+		#endif
+
 		sprintf(IDstr, "h%d.head", headerID);
 		get_location(headerLocation, fdMetaTable[fd - 3].fileName, IDstr);
 		FILE *fpHeader = fopen(headerLocation, "rb");
