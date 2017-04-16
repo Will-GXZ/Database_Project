@@ -9,21 +9,405 @@ void test_BM_open_file(void);
 void test_buffer_add_block(void);
 void test_BM_close_file(void);
 void test_find_buffer_block(void);
-
+void test_find_disk_block(void);
+void show_fdMetaTable(void);
+void show_bufferPool(void);
+void test_get_this_block(void);
+void test_BM_alloc_block(void);
+void test_BM_alloc_block10000(void);
+void test_get_first_block(void);
+void test_get_next_block(void);
+void test_BM_unpin_block(void);
+void test_get_next_ID(void);
+void test_get_prev_ID(void);
+void test_BM_dispose_block(void);
 
 int main(void) {
     printf("############ linking successful ###########\n");
 
     // test_init_block();
     // test_BM_init();
-    // char str[] = "t1";
-    // test_BM_create_file(str);
+    // test_BM_create_file("t1");
     // test_BM_open_file();
     // test_buffer_add_block();
     // test_BM_close_file();
     // test_find_buffer_block();
+    // test_find_disk_block();
+    // test_get_this_block();
+    // test_BM_alloc_block();
+    // test_BM_alloc_block10000();
+    // test_get_first_block();
+    // test_get_next_block();
+    // test_BM_unpin_block();
+    // test_get_next_ID();
+    // test_get_prev_ID();
+    test_BM_dispose_block();
 
     return 0;
+}
+
+void test_BM_dispose_block() {
+    int err = 0;
+    BM_init();
+    BM_create_file("t1");
+    int fd = BM_open_file("t1"); 
+    for (int i = 0; i < 10000 ; ++i)
+    {
+        printf("%d ", i);
+        err = BM_alloc_block(fd);
+        BM_print_error(err);
+        assert(err == 0);
+    }
+    printf("=========== TEST: dispose 10000 block ===========\n"); 
+    show_fdMetaTable();
+    show_bufferPool();
+    int a;
+    scanf("%d", &a);
+    for (int i = 0; i < 10000; ++i)
+    {
+        err = BM_dispose_block(fd, i);
+        BM_print_error(err);
+    }
+    show_fdMetaTable();
+    show_bufferPool();
+    BM_close_file(fd);
+}
+
+void test_get_prev_ID() {
+    int err = 0;
+    BM_init();
+    BM_create_file("t1");
+    int fd = BM_open_file("t1");\
+    for (int i = 0; i < 10000 ; ++i)
+    {
+        printf("%d ", i);
+        err = BM_alloc_block(fd);
+        BM_print_error(err);
+        assert(err == 0);
+    }
+    printf("=========== TEST: get prev ID ===========\n"); 
+    for (int i = 9999; i >=0 ; --i)
+    {
+        int prev = get_prev_ID(fd, i);
+        printf("%d ", prev);
+    }
+}
+
+void test_get_next_ID() {
+    int err = 0;
+    BM_init();
+    BM_create_file("t1");
+    int fd = BM_open_file("t1");
+
+    for (int i = 0; i < 10000 ; ++i)
+    {
+        printf("%d ", i);
+        err = BM_alloc_block(fd);
+        BM_print_error(err);
+        assert(err == 0);
+    }
+    printf("=========== TEST: get next ID ===========\n"); 
+    for (int i = 0; i < 10000; ++i) {
+        int next =  get_next_ID(fd, i);
+        printf("%d ", next);
+    }
+       
+}
+
+void test_BM_unpin_block() {
+    int err = 0;
+    BM_init();
+    BM_create_file("t1");
+    int fd = BM_open_file("t1");
+    block *blockPtr = NULL;
+
+    for (int i = 0; i < 10 ; ++i)
+    {
+        printf("%d ", i);
+        err = BM_alloc_block(fd);
+        BM_print_error(err);
+        assert(err == 0);
+    }
+    printf("========== TEST: unpin block ===========\n");
+    for (int i = 0; i < 5; ++i)
+    {
+        err = BM_get_this_block(fd, i, &blockPtr);
+        BM_print_error(err);
+        assert(err == 0);
+    }
+    for (int i = 0; i < 5; ++i)
+    {
+        bufferPool[i].dirty = 1;
+        bufferPool[i].freeSpace = 10;
+    }
+    show_bufferPool();
+    show_fdMetaTable();
+    for (int i = 0; i < 5; ++i)
+    {
+        err = BM_unpin_block(&bufferPool[i]);
+        BM_print_error(err);
+        assert(err == 0);
+    }
+    show_bufferPool();
+    show_fdMetaTable();
+
+}
+
+void test_get_next_block() {
+    int err = 0;
+    BM_init();
+    BM_create_file("t1");
+    int fd = BM_open_file("t1");
+
+    for (int i = 0; i < 5000; ++i)
+    {
+        printf("%d ", i);
+        err = BM_alloc_block(fd);
+        BM_print_error(err);
+        assert(err == 0);
+    }
+    block *blockPtr = NULL;
+
+    printf("============== TEST: next doesn't exist ==============\n");
+    // currentID is the lastID
+    fdMetaTable[fd - 3].currentID = 4999;
+    err = BM_get_next_block(fd, &blockPtr);
+    BM_print_error(err);
+    show_fdMetaTable();
+    show_bufferPool();
+
+    printf("============== TEST: sequential get block ==============\n");
+    BM_get_first_block(fd, &blockPtr);
+    for (int j = 1; j < 5000; ++j) {
+        for (int i = 0; i < BUFFERSIZE; ++i) {
+                bufferPool[i].pinCount = 0;
+        } // allow continuously add to buffer pool
+        err = BM_get_next_block(fd, &blockPtr);
+        BM_print_error(err);
+        assert(err == 0);
+        assert(blockPtr->blockID == j);
+    }    
+    show_fdMetaTable();
+    show_bufferPool();
+}
+
+void test_get_first_block() {
+    int err = 0;
+    BM_init();
+    BM_create_file("t1");
+    int fd = BM_open_file("t1");
+
+    for (int i = 0; i < 100; ++i)
+    {
+        printf("%d ", i);
+        err = BM_alloc_block(fd);
+        BM_print_error(err);
+        assert(err == 0);
+    }
+
+    printf("================ TEST: get first block ================\n");
+    block *blockPtr = NULL;
+    err = BM_get_first_block(fd, &blockPtr);
+    BM_print_error(err);
+    printf("the ID of the first block that we get is: %d\n", blockPtr->blockID);
+    show_fdMetaTable();
+    show_bufferPool();
+}
+
+// continuiously allocate 20 000 new block
+void test_BM_alloc_block10000() {
+    int err = 0;
+    BM_init();
+    BM_create_file("t1");
+    int fd = BM_open_file("t1");
+    show_fdMetaTable();
+
+    for (int i = 0; i < 20000; ++i) {
+        err = BM_alloc_block(fd);
+        BM_print_error(err);
+        assert(err == 0);
+        printf("            %d\n", i);
+    }
+    show_fdMetaTable();
+
+    char data[FRAMESIZE];
+    FILE *fp = fopen("./data/t1_h4.head", "rb");
+    fread(data, 1, FRAMESIZE, fp);
+    int a[1];
+    memcpy(a, data + headerCapacity, sizeof(int));
+    printf("%d\n", a[0]);
+}
+
+void test_BM_alloc_block() {
+    int err = 0;
+    BM_init();
+    BM_create_file("t1");
+    int fd = BM_open_file("t1");
+    show_fdMetaTable();
+
+    // test for invalid fd.
+    printf("\n\n=============== test for invalid fd ================\n\n");
+    err = BM_alloc_block(4);
+    BM_print_error(err);
+
+    // test: 1st header page has free space
+    printf("\n\n======== test: 1st header file has free space =======\n\n");
+    err = BM_alloc_block(fd);
+    BM_print_error(err);
+    show_fdMetaTable();
+
+    // test: 1st header is full, 2nd has free space
+    // set 1st header to full, 2nd empty
+    printf("\n\n======== test: 1st is full, 2nd has free space =======\n\n");
+    fdMetaTable[fd - 3].headerNumber = 2;
+    char data[FRAMESIZE];
+    memset(data, 1, headerCapacity);
+    *((int *)(data + headerCapacity)) = 0;
+    data[FRAMESIZE - 1] = '@';
+    FILE *fp = fopen("./data/t1_h0.head", "wb+");
+    if (fp == NULL) { exit(1);}
+    if(fwrite(data, 1, FRAMESIZE, fp) != FRAMESIZE) { exit(2); }
+    fclose(fp);
+    fp = NULL;
+    fp = fopen("./data/t1_h1.head", "wb+");
+    if (fp == NULL) { exit (3); }
+    memset(data, -1, FRAMESIZE - 1 - sizeof(int));
+    *((int *)(data + headerCapacity)) = headerCapacity - 1;
+    if (fwrite(data, 1, FRAMESIZE, fp) != FRAMESIZE) { exit(3); } // write, error
+    fclose(fp);
+    fp = NULL;
+
+    err = BM_alloc_block(fd);
+    BM_print_error(err);
+    show_fdMetaTable();
+
+    // test: 1st, 2nd are full, need to create new header file
+    printf("\n\n===== test: 1,2 are full, need to create new header =====\n\n");
+    memset(data, 1, headerCapacity);
+    *((int *)(data + headerCapacity)) = 0;
+    data[FRAMESIZE - 1] = '@';
+    fp = fopen("./data/t1_h1.head", "wb+");
+    if (fp == NULL) { exit(1);}
+    if(fwrite(data, 1, FRAMESIZE, fp) != FRAMESIZE) { exit(2); }
+    fclose(fp);
+    fp = NULL;
+
+    err = BM_alloc_block(fd);
+    BM_print_error(err);
+    show_fdMetaTable();
+
+}
+
+void test_get_this_block() {
+    int err;
+    BM_init();
+    BM_create_file("t1");
+    int fd = BM_open_file("t1");
+    // create new blocks to test
+    for (int i = 0; i < 100; ++i)
+    {
+        err = BM_alloc_block(fd);
+        BM_print_error(err);
+    }
+    show_fdMetaTable();
+    show_bufferPool();
+
+    block *blockPtr = NULL;
+
+    // test: non-exist fd
+    printf("============= TEST: fd that doesn't exist ===============\n");
+    err = BM_get_this_block(4, 0, &blockPtr);
+    BM_print_error(err);
+    if (err == 0) {
+        printf("the ID of block that we get is: %d\n", blockPtr->blockID);
+    }
+    // test: non-exist blockID
+    printf("=========== TEST: blockID that doesn't exitst ============\n");
+    err = BM_get_this_block(fd, 100, &blockPtr); // we only have 0 ~ 99.
+    BM_print_error(err);
+    if (err == 0) {
+        printf("the ID of block that we get is: %d\n", blockPtr->blockID);
+    }
+    // test: get block from disk
+    printf("=========== TEST: block is not in buffer ============\n");
+    show_fdMetaTable();
+    show_bufferPool();
+    err = BM_get_this_block(fd, 5, &blockPtr);
+    BM_print_error(err);
+    if (err == 0) {
+        printf("the ID of block that we get is: %d\n", blockPtr->blockID);
+    }
+    show_fdMetaTable();
+    show_bufferPool();
+    //test: block is in buffer
+    printf("=========== TEST: block is in buffer pool ============\n");
+    err = BM_get_this_block(fd, 5, &blockPtr);
+    BM_print_error(err);
+    if (err == 0) {
+        printf("the ID of block that we get is: %d\n", blockPtr->blockID);
+    }
+    show_fdMetaTable();
+    show_bufferPool();
+}
+
+void test_find_disk_block() {
+    BM_init();
+    BM_create_file("t1");
+    int fd = BM_open_file("t1");
+    printf("fd = %d\n", fd);
+    show_fdMetaTable();
+    show_bufferPool();
+
+    block *blockPtr = NULL;
+    // test unsuccessful finding 
+    int err = find_disk_block(&blockPtr, 3, fd); 
+    BM_print_error(err);    //this error is caused by metadata.
+    
+    fdMetaTable[fd - 3].lastBlockID = 3;
+    err = find_disk_block(&blockPtr, 3, fd);
+    BM_print_error(err);  //this error is due to file page with ID = 3 doesn't exist
+
+    // create a page with ID = 3 for 't1'
+    char data[FRAMESIZE];
+    memset(data, 0, FRAMESIZE);
+    data[0] = 120;
+    data[FRAMESIZE - 1] = 89;
+    char location[20];
+    get_location(location, "t1", "3.dat");
+    FILE *fp = fopen(location, "wb+");
+    if (fwrite(data, 1, FRAMESIZE, fp) != FRAMESIZE) { printf("file error\n"); }
+    fclose(fp);
+    err = find_disk_block(&blockPtr, 3, fd);
+    BM_print_error(err); // this time, find successfully
+    show_bufferPool();
+
+}
+
+void show_fdMetaTable() {
+    printf("\n!!!!!!!!!!! show_fdMetaTable !!!!!!!!!!!!\n\n");
+    for (int i = 0; i < max_fd; ++i) {
+        if (fdMetaTable[i].fileName != NULL) {
+            printf("fd: %d,  ", i + 3);
+            printf("fileName: %s,  ", fdMetaTable[i].fileName);
+            printf("firstID: %d, lastID: %d, blockNum: %d, headerNum: %d, ", \
+                fdMetaTable[i].firstBlockID, fdMetaTable[i].lastBlockID,\
+                fdMetaTable[i].blockNumber, fdMetaTable[i].headerNumber);
+            printf("currentID: %d\n", fdMetaTable[i].currentID);
+            printf("-------------------------------------------------------\n");
+        }
+    }
+}
+
+void show_bufferPool() {
+    printf("\n!!!!!!!!!!! show_bufferPool !!!!!!!!!!!!\n\n");
+    for (int i = 0; i < BUFFERSIZE; ++i) {
+        printf("BufferIndex: %d, blockID: %d, pinCount: %d, dirty: %d, ", i, \
+            bufferPool[i].blockID, bufferPool[i].pinCount, bufferPool[i].dirty);
+        printf("referenced: %d, freeSpace: %d, fd: %d, data: %p\n", \
+            bufferPool[i].referenced, bufferPool[i].freeSpace, \
+            bufferPool[i].fd, bufferPool[i].data);
+        printf("-----------------------------------------------------------\n");
+    }
 }
 
 void test_find_buffer_block() {
@@ -34,7 +418,7 @@ void test_find_buffer_block() {
     bufferPool[2].fd = 3;
     bufferPool[2].blockID = 6;
     block *blockPtr = NULL;
-    if (find_buffer_block(&blockPtr, 3, 5) == 0) {
+    if (find_buffer_block(&blockPtr, 3, 6) == 0) {
         printf("didn't find this block in buffer pool.");
     } else {
         printf("successfully found block: %d  %d\n", blockPtr->fd, blockPtr->blockID);
@@ -57,55 +441,103 @@ void test_BM_close_file() {
 }
 
 void test_buffer_add_block() {
+    //Modify attributes of blocks to test
     BM_init();
-    bufferPool[0].pinCount = 0;
-    bufferPool[0].referenced = 1;
-    bufferPool[1].pinCount = 0;
-    bufferPool[1].referenced = 0;
-    bufferPool[2].pinCount = 0;
-    bufferPool[2].referenced = 1;    
-    char *data = (char *)malloc(4096);
-    data[0] = '1';
-    data[4095] = '@';
-    char *pageLocation = (char *)malloc(LOCATIONSIZE);
-    strcpy(pageLocation, "./data/hahaha.dat");
-    printf("%c\n%c\n%s\n", data[0], data[4095], pageLocation);
+    BM_create_file("t1");
+    int fd = BM_open_file("t1");
+    show_fdMetaTable();
+    int err = 0;
 
-    block *blockPtr;
-    int err = buffer_add_block(&blockPtr, data, 0, 0, pageLocation);
-    if (err != 0) { exit(err); }
-    printf("%c\n%c\n%s\n", blockPtr->data[0], blockPtr->data[4095],\
-        blockPtr->pageLocation);
-    printf("The index selected to replace is: %ld\n", blockPtr - bufferPool);
+    // create new blocks to test
+    for (int i = 0; i < 100; ++i)
+    {
+        err = BM_alloc_block(fd);
+        BM_print_error(err);
+    }
+
+    //test: buffer poll is empty, add 3 pages.
+    show_fdMetaTable();
+    printf("\n\n======= TEST: Buffer Pool is empty, add 3 pages =======\n\n");
+    for (int i = 0; i < 3; ++i)
+    {
+        int blockID = i;
+        char location[LOCATIONSIZE];
+        char blockIDStr[LOCATIONSIZE];
+        sprintf(blockIDStr, "%d.dat", blockID);
+        get_location(location, fdMetaTable[fd - 3].fileName, blockIDStr);
+        FILE *fp = fopen(location, "rb+");
+        assert(fp != NULL);
+        char data[FRAMESIZE];
+        if (fread(data, 1, FRAMESIZE, fp) != FRAMESIZE) { exit(1); };
+        fclose(fp);
+        block *blockPtr = NULL;
+        printf("adding blockID: %d\n", blockID);
+        err = buffer_add_block(&blockPtr, data, fd, blockID);
+        BM_print_error(err);
+        if (err != 0) {
+            show_fdMetaTable();
+            show_bufferPool();
+            break;
+        }
+        
+    }
+    show_fdMetaTable();
+    show_bufferPool();
+
+    //test: try to add 20 more pages which is more than buffer blocks.
+    printf("\n\n======= TEST: try to add 20 more pages =======\n\n");
+    for (int i = 0; i < 20; ++i)
+    {
+        int blockID = i;
+        char location[LOCATIONSIZE];
+        char blockIDStr[LOCATIONSIZE];
+        sprintf(blockIDStr, "%d.dat", blockID);
+        get_location(location, fdMetaTable[fd - 3].fileName, blockIDStr);
+        FILE *fp = fopen(location, "rb+");
+        assert(fp != NULL);
+        char data[FRAMESIZE];
+        if (fread(data, 1, FRAMESIZE, fp) != FRAMESIZE) { exit(1); };
+        fclose(fp);
+        block *blockPtr = NULL;
+        printf("adding blockID: %d\n", blockID);
+        err = buffer_add_block(&blockPtr, data, fd, blockID);
+        BM_print_error(err);
+        if (err != 0) {
+            break;
+        }
+    }
+    show_fdMetaTable();
+    show_bufferPool();
 }
 
 void test_BM_open_file() {
     BM_init();
     char str[] = "t1";
     BM_create_file(str);
-    BM_open_file(str);
-    printf("test: metatable: %d %d %s\n", fdMetaTable[0].blockNumber,\
-        fdMetaTable[0].headerNumber, fdMetaTable[0].fileName);
+    int fd = BM_open_file(str);
+    printf("returned fd = %d\n", fd);
+    printf("test: metatable: %d %d %s\n", fdMetaTable[fd - 3].blockNumber,\
+        fdMetaTable[fd - 3].headerNumber, fdMetaTable[fd - 3].fileName);
 
 }
 
 void test_BM_create_file(const char *filename) {
-    int a = BM_create_file(filename);
-    fprintf(stderr, "%d\n", a);
+    BM_init();
+    int err = BM_create_file(filename);
+    BM_print_error(err);
     // should create a t1_-1.dat file in ./data/
 }
 
 void test_BM_init() {
     BM_init();
     for (int i = 0; i < BUFFERSIZE; ++i) {
-    printf("%d ", bufferPool[0].pinCount);
-    printf("%d ", bufferPool[0].dirty);
-    printf("%d ", bufferPool[0].fd);
-    printf("%d ", bufferPool[0].blockID);
-    printf("%d ", bufferPool[0].referenced);
-    printf("%d ", bufferPool[0].freeSpace);
-    printf("%p ", bufferPool[0].pageLocation);
-    printf("%p\n", bufferPool[0].data);        
+    printf("pin: %d ", bufferPool[0].pinCount);
+    printf("dirty: %d ", bufferPool[0].dirty);
+    printf("fd: %d ", bufferPool[0].fd);
+    printf("blockID: %X ", bufferPool[0].blockID);
+    printf("referenced: %d ", bufferPool[0].referenced);
+    printf("freeSpace: %d ", bufferPool[0].freeSpace);
+    printf("data: %p\n", bufferPool[0].data);        
     }
     //should print each value of each buffer block.
 
@@ -113,9 +545,9 @@ void test_BM_init() {
     // should print the max number of fd.
 
     printf("metaTable: %p\n", fdMetaTable);
-    metadata meta = fdMetaTable[max_fd];
+    metadata meta = fdMetaTable[max_fd - 1];
     printf("%p %d\n", meta.fileName, meta.blockNumber);
-    // should print 0X0 and 0.
+    // should print 0X0 and -1.
 
 
 }

@@ -5,15 +5,15 @@
 #define PROJECTA_H
 
 #define FRAMESIZE 4096
-#define BUFFERSIZE 3
+#define BUFFERSIZE 5
 #define LOCATIONSIZE 30
 #define INT_MAX 0x7fffffff
+#define ENTRYLENGTH 40
 
 /*The key for accessing a file's metadata,
  *like its physical location, # blocks, ...*/
 typedef int boolean;
 typedef int fileDesc;
-typedef unsigned char byte;
 typedef int errCode; 
 typedef struct _block{
     int pinCount;
@@ -24,14 +24,16 @@ typedef struct _block{
     int blockID; 
     int referenced;//used for buffer replacement policy.
     int freeSpace; //in terms of #entries.
-    char* pageLocation; //location on disk of this page.
 } block;
 
 
 typedef struct _metadata {
-    char* fileName; // the location of the first header page.
+    int currentID; // the blockID that is current in use
+    int firstBlockID;
+    int lastBlockID;
     int blockNumber; // the number of total page the file has
     int headerNumber; // the number of header pages of the file.
+    char *fileName;
 } metadata;
 
 // global variable used for buffer pool replacement policy. 
@@ -47,6 +49,12 @@ extern metadata* fdMetaTable;
 // the max number of file descriptor that the system 
 // can assign for this process minus 3.
 extern long long max_fd;
+
+// the number of entries a page can contain
+extern int pageCapacity;
+
+// the number of pageID's a header file can contain
+extern int headerCapacity;
 
 /*Perform necessary initializations for the buffer layer. 
  *This probably involves creating a buffer pool with a specified
@@ -123,4 +131,44 @@ errCode BM_unpin_block( block* blockPtr );
  */
 void BM_print_error( errCode ec );
 
+
+// helper functions, put them here just for testing
+void init_block(block* blockPtr);
+void init_metadata(metadata* metaPtr);
+void get_location(char *str, const char *filename, const char *postfix);
+errCode buffer_add_block(block **block_2ptr, const void *data, fileDesc fd,\
+    int blockID);
+boolean find_buffer_block(block **block_2ptr, fileDesc fd, int blockID);
+errCode find_disk_block(block **block_2ptr, int blockID, fileDesc fd);
+int get_next_ID(fileDesc fd, int blockID);
+int get_prev_ID(fileDesc fd, int blockID);
+
+
+
 #endif
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
