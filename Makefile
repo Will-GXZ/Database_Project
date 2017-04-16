@@ -1,24 +1,19 @@
-####################################################
-##                                                ##
-##          Makefile for Project Part A           ##
-##                  Apr 4, 2017                   ##       
-##                                                ##
-####################################################
-CC		= gcc
-CFLAGS	=-std=c99 -Wall -Wextra -O0 -ggdb
+#################################################### 
+##                                                ## 
+##          Makefile for Project Part A           ## 
+##                   Apr 4, 2017                  ## 
+##                                                ## 
+####################################################  
 
-test:		projectA.o my_test.o
-	@echo '****************  Using Makefile to compile ****************'
+# CC      = gcc
+# CFLAGS  =-std=c99 -Wall -Wextra -O0 -ggdb
 
-	@echo '*******  To delete *.o, run make clean, to delete all \
-	run make reset *******'
-	
-	@echo ' '
+# compile together with project Part B, not yet came out.
 
-	${CC} ${CFLAGS} -o test projectA.o my_test.o
 
-projectA.o:	projectA.c projectA.h
-my_test.o: my_test.c projectA.h
+
+test:
+	make -f ./TestMakefile
 
 clean:
 	rm -rf *.o *.dSYM
@@ -26,4 +21,6 @@ clean:
 reset:
 	make clean
 	rm test
+	rm -r ./data
+   
 
