@@ -46,7 +46,7 @@ To compile this part for testing purpose, make sure you have all the files in th
     1.  Buffer Pool Structure
     This program use a dynamic array as data structure, each slot of the array stores a block structure.
      
-     *The definition of the array and block: *
+     The definition of the array and block: 
      ``` 
     typedef struct _block{
             int pinCount;
