@@ -70,7 +70,7 @@ To compile this part for testing purpose, make sure you have all the files in th
    In my work, I define a **metadata structure** to store informations of each opened file. In the mean time, maintain a **metadata page** for each file in disk. When we open a file, read in its metadata page, store metadata in memory. When we close a file, write back metadata accordingly. 
    This is my definition of metadata structure:
    ```
-   typedef struct _metadata {
+    typedef struct _metadata {
         int currentID; // the blockID that is current in use
         int firstBlockID;
         int lastBlockID;
@@ -78,9 +78,9 @@ To compile this part for testing purpose, make sure you have all the files in th
         int headerNumber; // the number of header pages of the file.
         char *fileName;
         FILE *fp;
-} metadata;
-   ```
-   
+    } metadata;
+    ```
+
    2. File Organization
    In my implementation, I choose to use the **page directory** strategy to implement **heap file** organization. Specifically, the program  will store each page as a small file of 4096 bytes in disk, and for each database file,  maintain a series of header page as data pages' directory. Also, as I mentioned above, the program will maintain a metadata page for each database file in disk.
 
