@@ -37,6 +37,7 @@ void init_metadata(metadata* metaPtr) {
 	metaPtr->headerNumber = -1;
 	metaPtr->fileName = NULL;
 	metaPtr->currentID = -1;
+	metaPtr->fp = NULL;
 }
 
 void init_block(block* blockPtr) {
@@ -212,19 +213,21 @@ fileDesc BM_open_file( const char *filename ) {
 	if (pMeta == NULL) { return -1; } // no matedata page.
 	int meta[4];
 	fread(meta, sizeof(int), 4, pMeta);
+	fclose(pMeta);
+	pMeta = NULL;
 	
 	// store metadata in direct-address table.
-	metadata temp;
-	temp.fileName = (char *)malloc(LOCATIONSIZE);
-	strcpy(temp.fileName, filename);
-	temp.firstBlockID = meta[0];
-	temp.lastBlockID = meta[1];
-	temp.blockNumber = meta[2];
-	temp.headerNumber = meta[3];
-	if (fdMetaTable[fd - 3].fileName != NULL) { 
-		free(fdMetaTable[fd - 3].fileName); 
+	if (fdMetaTable[fd - 3].fileName != NULL) {
+		free(fdMetaTable[fd - 3].fileName);
 	}
-	fdMetaTable[fd - 3] = temp;
+	init_metadata(&fdMetaTable[fd - 3]);
+	fdMetaTable[fd - 3].fileName = (char *)malloc(LOCATIONSIZE);
+	strcpy(fdMetaTable[fd - 3].fileName, filename);
+	fdMetaTable[fd - 3].firstBlockID = meta[0];
+	fdMetaTable[fd - 3].lastBlockID = meta[1];
+	fdMetaTable[fd - 3].blockNumber = meta[2];
+	fdMetaTable[fd - 3].headerNumber = meta[3];
+	fdMetaTable[fd - 3].fp = fp;
 
 	#ifdef DEBUG
 		printf("BM_open_file: fd = %d\n", fd);
@@ -269,6 +272,12 @@ errCode BM_close_file( fileDesc fd ) {
 	fwrite(meta, sizeof(int), 4, fp);
 	fclose(fp);
 
+	//close file using metadata[fd - 3].fp.
+	if (fclose(fdMetaTable[fd - 3].fp) != 0) { 
+		printf("ERROR: BM_close_file, cannot close fd.\n");
+		return 3; 
+	}
+
 	//delete fd and metadata from hash table.
 	free(fdMetaTable[fd - 3].fileName);
 	fdMetaTable[fd - 3].fileName = NULL;
@@ -276,12 +285,8 @@ errCode BM_close_file( fileDesc fd ) {
 	fdMetaTable[fd - 3].headerNumber = -1;
 	fdMetaTable[fd - 3].firstBlockID = -1;
 	fdMetaTable[fd - 3].lastBlockID = -1;
+	fdMetaTable[fd - 3].fp = NULL;
 
-	//close file using fd.
-	if (close(fd) != 0) { 
-		printf("ERROR: BM_close_file, cannot close fd.\n");
-		return 3; 
-	}
 	#ifdef DEBUG
 		printf("meta page location: %s\n", metaLocation);
 		printf("*********** BM_close_file ************\n");
@@ -399,8 +404,12 @@ errCode BM_get_next_block( fileDesc fd, block** blockPtr ) {
 	// set input constraints first.
 	if (fd < 3 || fdMetaTable[fd - 3].fileName == NULL) {
 		printf("ERROR: BM_get_next_block, input fd: %d is not exist.\n", fd);
+		return 8;
 	}
-
+	if (fdMetaTable[fd - 3].currentID == -1) {
+		printf("ERROR: need to set currentID first.\n");
+		return 8;
+	}
 	if (fdMetaTable[fd - 3].currentID == fdMetaTable[fd - 3].lastBlockID) {
 		printf("ERROR: BM_get_next_block, this is already the last block.\n");
 		return 8;
@@ -727,6 +736,7 @@ errCode BM_dispose_block( fileDesc fd, int blockID ) {
 	if (fdMetaTable[fd - 3].firstBlockID == fdMetaTable[fd - 3].lastBlockID) {
 		fdMetaTable[fd - 3].firstBlockID = -1;
 		fdMetaTable[fd - 3].lastBlockID = -1;
+		fdMetaTable[fd - 3].currentID = -1;
 	} else {
 		if (blockID == fdMetaTable[fd - 3].firstBlockID) {
 			int firstID = get_next_ID(fd, blockID);

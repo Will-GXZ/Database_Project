@@ -5,13 +5,11 @@
 #define PROJECTA_H
 
 #define FRAMESIZE 4096
-#define BUFFERSIZE 5
+#define BUFFERSIZE 50
 #define LOCATIONSIZE 30
 #define INT_MAX 0x7fffffff
 #define ENTRYLENGTH 40
 
-/*The key for accessing a file's metadata,
- *like its physical location, # blocks, ...*/
 typedef int boolean;
 typedef int fileDesc;
 typedef int errCode; 
@@ -34,6 +32,7 @@ typedef struct _metadata {
     int blockNumber; // the number of total page the file has
     int headerNumber; // the number of header pages of the file.
     char *fileName;
+    FILE *fp;
 } metadata;
 
 // global variable used for buffer pool replacement policy. 

@@ -1,6 +1,8 @@
 #include <assert.h>
 #include <memory.h>
+
 #include "projectA.h"
+
 
 
 void populate_block(block* blockPtr);
@@ -25,9 +27,18 @@ void test_get_next_ID(void);
 void test_get_prev_ID(void);
 void test_BM_dispose_block(void);
 int given_test_main(void);
+void Memory_test(void);
+
 
 int main(void) {
     printf("############ linking successful ###########\n");
+
+    /************************************************************** 
+     *                                                            *
+     *    Unit Tests: Test boundary cases for each function       *
+     *                                                            *
+     *                                                            *
+     **************************************************************/
 
     // test_init_block();
     // test_BM_init();
@@ -46,9 +57,106 @@ int main(void) {
     // test_get_next_ID();
     // test_get_prev_ID();
     // test_BM_dispose_block();
-    given_test_main();
+
+   /*****************************************************************
+    *                                                               *
+    *                     Memory Test:                              *
+    *           Test if there is memory leak                        *
+    *           Need to run test with:                              *
+    *       valgrind --leak-check=full --show-leak-kinds=all \      *
+    *                --track-origins=yes'                           *
+    *****************************************************************/
+
+    Memory_test();
+
+
+    //****************************************************************
+    //*                                                              *
+    //*            This is the given testmain function.              *
+    //*    added with some code to show results and error messages   *
+    //*                                                              *
+    //****************************************************************
+    
+    // given_test_main();
 
     return 0;
+}
+
+void Memory_test() {
+    int err = 0;
+    block *blockPtr = NULL;
+
+    // initialize buffer manager
+    BM_init();
+
+    printf("======== Test1: create files and allocate new blocks =======\n");
+    // create 3 files, allock 10000 pages for each file
+    BM_create_file("test1");
+    BM_create_file("test2");
+    BM_create_file("test3");
+    fileDesc fds[3];
+    fds[0] = BM_open_file("test1");
+    fds[1] = BM_open_file("test2");
+    fds[2] = BM_open_file("test3");
+    for (int i = 0; i < 10000; ++i)
+    {
+        for (int j = 0; j < 3; ++j)
+        {
+            err = BM_alloc_block(fds[j]);
+            BM_print_error(err);
+            assert(err == 0);
+        }
+    }
+    show_bufferPool();
+    show_fdMetaTable();
+
+    printf("============ Test2: dispose 10000 blocks * 3 =============\n");
+    //  use get next to get each block, after call get_next_block, the block
+    //  will be added in buffer pool, need to unpin first
+    for (int i = 0; i < 3; ++i) // get_first, set currentID of each file to 0.
+    {
+        err = BM_get_first_block(fds[i], &blockPtr);
+        BM_print_error(err);
+        assert(err == 0);
+        blockPtr->dirty = 1;  // set dirty to 1, so we can test for write back
+        err = BM_unpin_block(blockPtr);
+        BM_print_error(err);
+        assert(err == 0);
+        err = BM_dispose_block(fds[i], blockPtr->blockID);
+        BM_print_error(err);
+        assert(err == 0);
+    }
+
+    for (int i = 0; i < 9999; ++i)
+    {   
+        for (int j = 0; j < 3; ++j)
+        {
+            err = BM_get_next_block(fds[j], &blockPtr);
+            BM_print_error(err);
+            if (err != 0) { show_fdMetaTable(); }
+            assert(err == 0);
+            blockPtr->dirty = 1;  // set dirty to 1, so we can test writing back
+            err = BM_unpin_block(blockPtr);
+            BM_print_error(err);
+            assert(err == 0);
+            err = BM_dispose_block(fds[j], blockPtr->blockID);
+            BM_print_error(err);
+            assert(err == 0);
+        }
+    }
+    show_fdMetaTable();
+    show_bufferPool();
+    for (int i = 0; i < 3; ++i)
+    {
+        err = BM_close_file(fds[i]);
+        BM_print_error(err);
+        assert(err == 0);
+    }
+    show_fdMetaTable();
+
+
+    free(bufferPool);
+    free(fdMetaTable);
 }
 
 // this is the given test main function
@@ -569,7 +677,8 @@ void show_fdMetaTable() {
             printf("firstID: %d, lastID: %d, blockNum: %d, headerNum: %d, ", \
                 fdMetaTable[i].firstBlockID, fdMetaTable[i].lastBlockID,\
                 fdMetaTable[i].blockNumber, fdMetaTable[i].headerNumber);
-            printf("currentID: %d\n", fdMetaTable[i].currentID);
+            printf("currentID: %d, fp: %p\n", fdMetaTable[i].currentID,\
+                 fdMetaTable[i].fp);
             printf("-------------------------------------------------------\n");
         }
     }
