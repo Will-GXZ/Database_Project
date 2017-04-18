@@ -40,7 +40,6 @@ int main(void) {
      *                                                            *
      **************************************************************/
 
-    // test_init_block();
     // test_BM_init();
     // test_BM_create_file("t1");
     // test_BM_open_file();
