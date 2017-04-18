@@ -7,7 +7,7 @@ Language: C
 Created at Mar 31, 2017
 ____________________________
 
-### *Acknowledgements*
+### Acknowledgements
 I would like to express my very great appreciation to Prof.Athanassoulis for his valuable and constructive suggestions during the planning and development of this work. I would also like to extend my thanks to TAs of this course for their continuous and patient response in [piazza](https://piazza.com). 
 
 I also wish to acknowledge the help provided by [tutorialspoint](https://www.tutorialspoint.com/c_standard_library) and [stackoverflow](https://stackoverflow.com/). To work on this project, I need to review and learn a lot of stuff in C and linux, therefore I search the Internet and these two web sites gave me very useful informations. 
@@ -89,12 +89,15 @@ To compile this part for testing purpose, make sure you have all the files in th
         Detailed roganization:
     
     *   Header Page
+
         ![Header page organization diagram](https://dl.dropboxusercontent.com/s/2xztywx1dmrqjtr/comp115proj_header.jpg?dl=0 )
     
     *   Data page
+
         ![Data page organization diagram](https://dl.dropboxusercontent.com/s/xcx9apto2sd70xg/comp115proj_page.jpg?dl=0)
    
     *   Metadata page
+
         ![Metadata page orgnization diagram](https://dl.dropboxusercontent.com/s/ahw67mb6mo9jbva/comp115proj_meta.jpg?dl=0)
   
   3.  Naming
@@ -120,6 +123,7 @@ Finally, I wrote a function to test if there is memory leak. This test function 
 
 Here is the result of valgrind:
 ![enter image description here](https://dl.dropboxusercontent.com/s/8w59rm3j0x3nlyl/comp115proj_valgrind.png?dl=0)
+
 No memory leak detected.
   
   
