@@ -391,6 +391,8 @@ errCode BM_get_first_block( fileDesc fd, block** blockPtr ) {
 		BM_print_error(err);
 		return 7;
 	}
+	fdMetaTable[fd - 3].currentID = fdMetaTable[fd - 3].firstBlockID;
+
 	#ifdef DEBUG
 		printf("*********** BM_get_first_block *************\n");
 	#endif
@@ -473,6 +475,8 @@ errCode BM_get_next_block( fileDesc fd, block** blockPtr ) {
 		BM_print_error(err);
 		return 8;
 	}
+	fdMetaTable[fd - 3].currentID = blockID;
+
 	#ifdef DEBUG
 		printf("*********** BM_get_next_block ************\n");
 	#endif
@@ -506,8 +510,7 @@ errCode BM_get_this_block( fileDesc fd, int blockID, block** blockPtr ) {
 		BM_print_error(err);
 		return 5;
 	} else {
-		fdMetaTable[fd - 3].currentID = blockID;
-
+		
 		#ifdef DEBUG
 			printf("********* BM_get_this_block, from disk **********\n");
 		#endif
