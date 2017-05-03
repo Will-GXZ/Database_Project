@@ -5,23 +5,23 @@
 ##                                                ## 
 ####################################################  
 CC		= gcc
-CFLAGS	=-std=gnu99 -Wall -Wextra -O0 -ggdb
+CFLAGS	=-std=gnu11 -Wall -Wextra -O0 -ggdb
 
-test:		projectA.o my_test.o
+testA:		projectA.o my_testA.o
 	@echo '________________________________________________________________'
 	@echo '|                                                               |'
 	@echo '|                  Using Makefile to compile                    |'
 	@echo '|                                                               |'
-	@echo '|                  Compiling using my_test.c                    |'
+	@echo '|                  Compiling using my_testA.c                   |'
 	@echo '|                                                               |'
 	@echo '|               --To delete *.o, run make clean                 |'
 	@echo '|               --To delete all run make reset                  |'
 	@echo '|_______________________________________________________________|'
 	
-	${CC} ${CFLAGS} -o test projectA.o my_test.o
+	${CC} ${CFLAGS} -o testA projectA.o my_testA.o
 
 projectA.o:	projectA.c projectA.h
-my_test.o: my_test.c projectA.h
+my_test.o: my_testA.c projectA.h
 
 
 
