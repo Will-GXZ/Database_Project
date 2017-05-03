@@ -83,7 +83,7 @@ To compile this part for testing purpose, make sure you have all the files in th
     fdMetaTable = (metadata *)malloc(max_fd * sizeof(metadata));
     ```
 
-   2. File Organization
+   2.  File Organization
    In my implementation, I choose to use the **page directory** strategy to implement **heap file** organization. Specifically, the program  will store each page as a small file of 4096 bytes in disk, and for each database file,  maintain a series of header page as data pages' directory. Also, as I mentioned above, the program will maintain a metadata page for each database file in disk.
 
         Detailed roganization:
@@ -100,11 +100,9 @@ To compile this part for testing purpose, make sure you have all the files in th
 
         ![Metadata page orgnization diagram](https://dl.dropboxusercontent.com/s/ahw67mb6mo9jbva/comp115proj_meta.jpg?dl=0)
   
-  3.  Naming
+  3.  Naming 
   Header pages   : (filename)_h(headerID).head
-
   Data pages     : (filename)_(blockID).dat
-  
   Metadata pages : (filename)_.meta
 
 #### Challenges and things worth discussing 
