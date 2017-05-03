@@ -100,10 +100,10 @@ To compile this part for testing purpose, make sure you have all the files in th
 
         ![Metadata page orgnization diagram](https://dl.dropboxusercontent.com/s/ahw67mb6mo9jbva/comp115proj_meta.jpg?dl=0)
   
-  3.  Naming 
-  Header pages   : (filename)_h(headerID).head
-  Data pages     : (filename)_(blockID).dat
-  Metadata pages : (filename)_.meta
+   3.  Naming
+   Header pages   : (filename)_h(headerID).head
+   Data pages     : (filename)_(blockID).dat
+   Metadata pages : (filename)_.meta
 
 #### Challenges and things worth discussing 
   Apparently, it is not easy to implement these APIs. The first problem I met is how to make those decisions and design the whole program. I spent 4 days to design the whole system, including my file organization, buffer replacement strategy and helper functions. I also spent a lot of time to write pseudocode for each function. All of these efforts turn out to be very helpful in my formally implementation.
