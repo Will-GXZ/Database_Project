@@ -102,7 +102,9 @@ To compile this part for testing purpose, make sure you have all the files in th
   
   3.  Naming
   Header pages   : (filename)_h(headerID).head
+
   Data pages     : (filename)_(blockID).dat
+  
   Metadata pages : (filename)_.meta
 
 #### Challenges and things worth discussing 
