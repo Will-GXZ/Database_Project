@@ -8,15 +8,15 @@
 #define BUFFERSIZE 50
 #define LOCATIONSIZE 30
 #define INT_MAX 0x7fffffff
-#define ENTRYLENGTH 40
+#define ENTRYLENGTH 16
 
 typedef int boolean;
 typedef int fileDesc;
 typedef int errCode; 
 typedef struct _block{
+    char* data; // void data[FRAMESIZE];
     int pinCount;
     int dirty;
-    char* data; // void data[FRAMESIZE];
     fileDesc fd;
     //start by 0, header pages do not enter buffer pool. 
     int blockID; 
@@ -26,13 +26,14 @@ typedef struct _block{
 
 
 typedef struct _metadata {
+    char *fileName;
+    FILE *fp;
     int currentID; // the blockID that is current in use
     int firstBlockID;
     int lastBlockID;
     int blockNumber; // the number of total page the file has
     int headerNumber; // the number of header pages of the file.
-    char *fileName;
-    FILE *fp;
+    int currentRecID;
 } metadata;
 
 // global variable used for buffer pool replacement policy. 
@@ -107,7 +108,7 @@ errCode BM_get_this_block( fileDesc, int blockID, block** blockPtr );
  *and updating the metadata for that file. Return 0 if the operation
  *succeeds or an error code if it fails.
  */
-errCode BM_alloc_block( fileDesc fd );
+errCode BM_alloc_block( fileDesc fd, int *blockIDptr );
 
 
 /*Remove the block with ID blockID from an open file.

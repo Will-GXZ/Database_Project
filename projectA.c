@@ -37,6 +37,7 @@ void init_metadata(metadata* metaPtr) {
 	metaPtr->headerNumber = -1;
 	metaPtr->fileName = NULL;
 	metaPtr->currentID = -1;
+	metaPtr->currentRecID = -1;
 	metaPtr->fp = NULL;
 }
 
@@ -521,7 +522,7 @@ errCode BM_get_this_block( fileDesc fd, int blockID, block** blockPtr ) {
 
 // create a new block in disk, update metadata as well, 
 // need to get a blockID first. Return 6 if fails.
-errCode BM_alloc_block( fileDesc fd ) {
+errCode BM_alloc_block( fileDesc fd, int *blockIDptr ) {
 	//get a block ID first.
 	int blockID = -1, headerID = 0;
 	char headerLocation[LOCATIONSIZE] = {0};
@@ -628,7 +629,7 @@ errCode BM_alloc_block( fileDesc fd ) {
 	}
 	fdMetaTable[fd - 3].blockNumber ++;
 
-
+	*blockIDptr = blockID;
 	#ifdef DEBUG
 		printf("********* BM_alloc_block ***********\n");
 	#endif
