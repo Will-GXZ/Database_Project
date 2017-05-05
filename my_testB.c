@@ -7,6 +7,12 @@
 
 record mkRecord(int attr1, int attr2, int attr3,
         char attr4, char attr5, char attr6, char attr7);
+void show_fdMetaTable(void);
+void show_bufferPool(void);
+void unpin_all(void);
+void print_rec(record);
+void pause(void);
+
 
 void test_HFL_init(void);
 void test_HFL_create_file(void);
@@ -14,12 +20,22 @@ void test_HFL_open_file(void);
 void test_HFL_close_file(void);
 void test_my_queue(void);
 void test_get_mapArray(void);
-void show_fdMetaTable(void);
-void show_bufferPool(void);
-void test_HFL_insert_rec(void);
+void test_HFL_insert_rec(void); // together with delete_rec and open
+void test_HFL_get_first_rec(void);
+void test_HFL_get_next_rec(void);
+void test_HFL_get_this_rec(void);
+// test 3 scanner functions
+void test_scanner(void);
 
 
-int main(int argc, char const *argv[]) {
+/////////////////////////////////
+//    This is the given test   //
+/////////////////////////////////
+void given_test_function(void);
+
+
+
+int main(void) {
     int err = 0;
     
     // test_HFL_init()
@@ -28,9 +44,307 @@ int main(int argc, char const *argv[]) {
     // test_HFL_close_file();
     // test_my_queue();
     // test_get_mapArray();
-    test_HFL_insert_rec();
+    // test_HFL_insert_rec();
+    // test_HFL_get_first_rec();
+    // test_HFL_get_next_rec();
+    // test_HFL_get_this_rec();
+    test_scanner();
+    // given_test_function();
+
 
     return 0;
+}
+
+void test_scanner() {
+    int err = 0;
+    HFL_init();
+    HFL_create_file("test_file_name");
+    int fd = HFL_open_file("test_file_name");
+    // insert 500 records
+    printf("insert 500 records\n");
+    for (int i = 0; i < 500; ++i)
+    {
+        record rec = mkRecord(i, i+1, 2*i, 'a', 'b', 'c', 'd');
+        HFL_insert_rec(fd, &rec);
+    }
+    record *r = (record *)malloc(sizeof(record));   
+
+    printf("****** test different scanDesc ******\n");
+    pause();
+    int s1, s2;
+    s1 = HFL_open_file_scan(fd);
+    s2 = HFL_open_file_scan(fd);
+    printf("s1 = %d, s2 = %d\n", s1, s2);
+    printf("\nget 3 records from s1\n");
+    pause();
+    for (int i = 0; i < 3; ++i)
+    {
+        err = HFL_find_next_rec(s1, &r);
+        HFL_print_error(err);
+        print_rec(*r);
+    }
+    printf("\nget 3 records from s2\n");
+    pause();
+    for (int i = 0; i < 3; ++i)
+    {
+        err = HFL_find_next_rec(s2, &r);
+        HFL_print_error(err);
+        print_rec(*r);
+    }
+    printf("\nget 3 records from s1\n");
+    pause();
+    for (int i = 0; i < 3; ++i)
+    {
+        err = HFL_find_next_rec(s1, &r);
+        HFL_print_error(err);
+        print_rec(*r);
+    }
+    printf("\nget 3 records from s2\n");
+    pause();
+    for (int i = 0; i < 3; ++i)
+    {
+        err = HFL_find_next_rec(s2, &r);
+        HFL_print_error(err);
+        print_rec(*r);
+    }
+
+    printf("\n******* test with get_next / get_first ********\n");
+    printf("\n**** get first ****\n");
+    pause();
+    err = HFL_get_first_rec(fd, &r);
+    HFL_print_error(err);
+    print_rec(*r);
+    printf("\n****** get next 3 times ******\n");
+    pause();
+    for (int i = 0; i < 3; ++i)
+    {
+        err = HFL_get_next_rec(fd, &r);
+        HFL_print_error(err);
+        print_rec(*r);
+    }
+    printf("\n*****  get 3 using s1, should start by 6  *****\n");
+    pause();
+    for (int i = 0; i < 3; ++i)
+    {
+        err = HFL_find_next_rec(s1, &r);
+        HFL_print_error(err);
+        print_rec(*r);
+    }
+    printf("\n******* close s1 **********\n");
+    pause();
+    HFL_close_file_scan(s1);
+    err = HFL_find_next_rec(s1, &r);
+    HFL_print_error(err);
+    print_rec(*r);
+
+    printf("\n*********** using new s3 scan all 500 records **********\n");
+    pause();
+    int s3 = HFL_open_file_scan(fd);
+    for (int i = 0; i < 500; ++i)
+    {
+        err = HFL_find_next_rec(s3, &r);
+        HFL_print_error(err);
+        print_rec(*r);
+    }
+    printf("\n************ scan with deleted records *************\n");
+    printf("delete 100 to 249, 300 to 450\n");
+    pause();
+    for (int i = 100; i < 250; ++i)
+    {
+        HFL_delete_rec(fd, i);
+    }
+    for (int i = 300; i < 451; ++i)
+    {
+        HFL_delete_rec(fd, i);
+    }
+    printf("using new s1 scan all records\n");
+    pause();
+    s1 = HFL_open_file_scan(fd);
+    for (int i = 0; i < 500; ++i)
+    {
+        err = HFL_find_next_rec(s1, &r);
+        HFL_print_error(err);
+        if (err != 0) {
+            break;
+        }
+        print_rec(*r);
+    }
+}
+
+void test_HFL_get_this_rec() {
+    int err = 0;
+    HFL_init();
+    HFL_create_file("test_file_name");
+    int fd = HFL_open_file("test_file_name");
+    // insert 500 records
+    printf("insert 500 records\n");
+    for (int i = 0; i < 500; ++i)
+    {
+        record rec = mkRecord(i, i+1, 2*i, 'a', 'b', 'c', 'd');
+        HFL_insert_rec(fd, &rec);
+    }
+    record *r = (record *)malloc(sizeof(record));    
+    printf("\nget id = 0\n");
+    err = HFL_get_this_rec(fd, 0, &r);
+    HFL_print_error(err);
+    print_rec(*r);
+    printf("\nget id = 239\n");
+    err = HFL_get_this_rec(fd, 239, &r);
+    HFL_print_error(err);
+    print_rec(*r);
+    printf("\nget id = 240\n");
+    err = HFL_get_this_rec(fd, 240, &r);
+    HFL_print_error(err);
+    print_rec(*r);
+    printf("\nget id = 479\n");
+    err = HFL_get_this_rec(fd, 479, &r);
+    HFL_print_error(err);
+    print_rec(*r);
+    printf("\nget id = 480\n");
+    err = HFL_get_this_rec(fd, 480, &r);
+    HFL_print_error(err);
+    print_rec(*r);
+    printf("\nget id = 499\n");
+    err = HFL_get_this_rec(fd, 499, &r);
+    HFL_print_error(err);
+    print_rec(*r);
+    printf("\nget id = 500 (doesn't exist)\n");
+    err = HFL_get_this_rec(fd, 500, &r);
+    HFL_print_error(err);
+    print_rec(*r);
+    printf("\n*********** test get deleted record ***********\n");
+    pause();
+    HFL_delete_rec(fd, 50);
+    err = HFL_get_this_rec(fd, 50, &r);
+    HFL_print_error(err);
+    print_rec(*r);
+}
+
+void pause() {
+    printf("Press any key to continue ...\n");
+    getchar();
+    getchar();
+    return;
+}
+
+void test_HFL_get_next_rec() {
+    int err = 0;
+    HFL_init();
+    HFL_create_file("test_file_name");
+    int fd = HFL_open_file("test_file_name");
+    // insert 500 records
+    for (int i = 0; i < 500; ++i)
+    {
+        record rec = mkRecord(i, i+1, 2*i, 'a', 'b', 'c', 'd');
+        HFL_insert_rec(fd, &rec);
+    }
+    record *r = (record *)malloc(sizeof(record));
+    err = HFL_get_first_rec(fd, &r);
+    HFL_print_error(err);
+    print_rec(*r);
+    printf("\n");
+    // keep get next 100
+    for (int i = 0; i < 100; ++i)
+    {
+        err = HFL_get_next_rec(fd, &r);
+        HFL_print_error(err);
+        print_rec(*r);
+    }
+    printf("\nnow, currentRecID = %d, currentBlockID = %d\n", \
+        fdMetaTable[fd - 3].currentRecID, fdMetaTable[fd - 3].currentID);
+    printf("*****************************************************\n");
+    printf("**************** delete 40, get next100 **************\n");
+
+    pause();
+    for (int i = 100; i < 140; ++i)
+    {
+        HFL_delete_rec(fd, i + 1);
+    }
+    for (int i = 0; i < 100; ++i)
+    {
+        err = HFL_get_next_rec(fd, &r);
+        HFL_print_error(err);
+        print_rec(*r);
+    }
+    printf("\nnow, currentRecID = %d, currentBlockID = %d\n", \
+        fdMetaTable[fd - 3].currentRecID, fdMetaTable[fd - 3].currentID);
+    printf("*****************************************************\n");
+    printf("**************** keep get next 259 **************\n");
+
+    pause();
+    for (int i = 0; i < 259; ++i)
+    {
+        err = HFL_get_next_rec(fd, &r);
+        HFL_print_error(err);
+        print_rec(*r);
+    }
+    printf("\nnow, currentRecID = %d, currentBlockID = %d\n", \
+        fdMetaTable[fd - 3].currentRecID, fdMetaTable[fd - 3].currentID);
+    printf("*****************************************************\n");
+    printf("************ keep get next 1 (doesn't exist) ***********\n");
+
+    pause();
+    err = HFL_get_next_rec(fd, &r);
+    HFL_print_error(err);
+    print_rec(*r);
+}
+
+void test_HFL_get_first_rec() {
+    int err = 0;
+    HFL_init();
+    HFL_create_file("test_file_name");
+    int fd = HFL_open_file("test_file_name");
+    // insert 500 records
+    for (int i = 0; i < 500; ++i)
+    {
+        record rec = mkRecord(i, i+1, 2*i, 'a', 'b', 'c', 'd');
+        HFL_insert_rec(fd, &rec);
+    }
+    record *r = (record *)malloc(sizeof(record));
+    HFL_get_first_rec(fd, &r);
+    print_rec(*r);
+    printf("\n***************  Delete 100 record  **************\n");
+    for (int i = 0; i < 100; ++i)
+    {
+        HFL_delete_rec(fd, i);
+    }
+    HFL_get_first_rec(fd, &r);
+    print_rec(*r);
+    printf("\n***************  Delete 200 record  **************\n");
+    for (int i = 100; i < 300; ++i)
+    {
+        HFL_delete_rec(fd, i);
+    }
+    HFL_get_first_rec(fd, &r);
+    print_rec(*r);
+    printf("\n***************  Delete 200 record  **************\n");
+    printf("\n********** Sould print ERROR **********\n");
+    for (int i = 300; i < 500; ++i)
+    {
+        HFL_delete_rec(fd, i);
+    }
+    err = HFL_get_first_rec(fd, &r);
+    if (err != 0) {
+        HFL_print_error(err);
+    }
+
+}
+
+void print_rec(record rec) {
+    printf("%d  %d  %d  %c  %c  %c, \t", rec.attribute1, rec.attribute2, \
+        rec.attribute3, rec.attribute4, rec.attribute5, rec.attribute6);
+}
+
+void unpin_all() {
+    int err = 0;
+    for (int i = 0; i < BUFFERSIZE; ++i)
+    {
+        if (bufferPool[i].pinCount > 0) {
+            bufferPool[i].dirty = 1;
+            err = BM_unpin_block(&bufferPool[i]);
+            BM_print_error(err);
+        }
+    }
 }
 
 void test_HFL_insert_rec() {
@@ -38,13 +352,47 @@ void test_HFL_insert_rec() {
     HFL_init();
     err = HFL_create_file("test_file_name");
     int fd = HFL_open_file("test_file_name");
-    for (int i = 0; i < 1; ++i)
+    for (int i = 0; i < 450; ++i)
     {
         record r = mkRecord(i, i+1, i*2, 'a', 'b', 'c', 'd');
         recordID rid = HFL_insert_rec(fd, &r);
         printf("%d  ", rid);
     }
+    printf("\n");
+    char *data = bufferPool[1].data;
+    for (int i = 0; i < FRAMESIZE; ++i)
+    {
+         printf("%d ", data[i]);
+    }
+    printf("\nblock->freeSpace = %d\n", bufferPool[1].freeSpace);
+    printf("element number in queue = %d\n", Q_elementNum());
+///////////////////////////////////////////////////////////////////
+    printf("***************************************************\n");
+    printf("simulate the situation that we deleted former records\n");
+    for (int i = 0; i < 100; ++i){
+        HFL_delete_rec(3, i);
+    }
+    printf("\nblock->freeSpace = %d\n", bufferPool[0].freeSpace);
+    for (int i = 0; i < 300; ++i)
+    {
+        record r = mkRecord(i, i+1, i*2, 'a', 'b', 'c', 'd');
+        recordID rid = HFL_insert_rec(fd, &r);
+        printf("%d  ", rid);
+    } 
+    printf("\nblock->freeSpace = %d\n", bufferPool[2].freeSpace);
+    printf("element number in queue = %d\n", Q_elementNum());
+    show_bufferPool();
+    unpin_all();
+    HFL_close_file(3);
 
+    HFL_open_file("test_file_name");
+    block *blockPtr = NULL;
+    BM_get_first_block(3, &blockPtr);
+    printf("reopen, freeSpace 0 = %d\n", blockPtr->freeSpace);
+    BM_get_next_block(3, &blockPtr);
+    printf("reopen, freeSpace 1 = %d\n", blockPtr->freeSpace);
+    BM_get_next_block(3, &blockPtr);
+    printf("reopen, freeSpace 2 = %d\n", blockPtr->freeSpace);
 }
 
 void test_get_mapArray() {
@@ -162,84 +510,83 @@ void test_HFL_init() {
     HFL_init();
     for (int i = 0; i < MAXSDNUM; ++i)
     {
-        printf("%d  ", scannerTable[i].currentBlockID);
+        printf("%d  ", scannerTable[i].currentRid);
     }
 }
 
-// int main(int argc, char const *argv[])
-// {
 
-//     int errc = 0;
+// This is the given test function
+void given_test_function()
+{
+    int errc = 0;
 
-//     HFL_init();
+    HFL_init();
 
-//     errc = HFL_create_file("testing.dat");
-//     if (errc < 0) HFL_print_error(errc);
+    errc = HFL_create_file("testing.dat");
+    if (errc != 0) HFL_print_error(errc);
 
-//     fileDesc fd = HFL_open_file("testing.dat");
+    fileDesc fd = HFL_open_file("testing.dat");
 
-//     // The number of records to insert into the file
-//     int numRecords = 1000;
+    // The number of records to insert into the file
+    int numRecords = 1000;
 
-//     // Generate some nonsense records and insert them into the file
-//     for (int i = 0; i < numRecords; i++) {
-//         record rec = mkRecord(i % 10, (i + 1) % 10, (i + 2) % 10,
-//                  'a', 'b', 'c', 'd');
-//         recordID rid = HFL_insert_rec(fd, &rec);
-//     }
+    // Generate some nonsense records and insert them into the file
+    for (int i = 0; i < numRecords; i++) {
+        record rec = mkRecord(i % 10, (i + 1) % 10, (i + 2) % 10,
+                 'a', 'b', 'c', 'd');
+        recordID rid = HFL_insert_rec(fd, &rec);
+    }
 
-//     record* recPtr = NULL;
-    
-//     // Retrieve the first record from the file    
-//     errc = HFL_get_first_rec(fd, &recPtr);
-//     if (errc < 0) HFL_print_error(errc);
-//     // Print attributes of the first record
+    record* recPtr = (record *)malloc(sizeof(record));
+    // Retrieve the first record from the file    
+    errc = HFL_get_first_rec(fd, &recPtr);
+    if (errc != 0) HFL_print_error(errc);
+    // Print attributes of the first record
+    print_rec(*recPtr);
+    pause();
+    // Iterate through all records in the file
+    for (int i = 0; i < numRecords - 1; i++) {
+        errc = HFL_get_next_rec(fd, &recPtr);
+        if (errc != 0) HFL_print_error(errc);
+        // Print attributes of the next record
+    }
 
-//     // Iterate through all records in the file
-//     for (int i = 0; i < numRecords - 1; i++) {
-//         errc = HFL_get_next_rec(fd, &recPtr);
-//         if (errc < 0) HFL_print_error(errc);
-//         // Print attributes of the next record
-//     }
+    // Retrieve the record wth ID 2
+    errc = HFL_get_this_rec(fd, 2, &recPtr);
+    if (errc != 0) HFL_print_error(errc);
+    // Print attributes of the record with ID 2
 
-//     // Retrieve the record wth ID 2
-//     errc = HFL_get_this_rec(fd, 2, &recPtr);
-//     if (errc < 0) HFL_print_error(errc);
-//     // Print attributes of the record with ID 2
+    // Delete all records with even IDs between 0 and 100
+    for (int i = 0; i < 100; i++) {
+        if (i % 2 == 0) {
+            errc = HFL_delete_rec(fd, i);
+            if (errc != 0) {
+                HFL_print_error(errc);
+            } else {
+                numRecords--;
+            }
+        }
+    }
+    // Iterate through the records in the file a second time
+    // to confirm that some have been deleted
+    errc = HFL_get_first_rec(fd, &recPtr);
+    if (errc != 0) HFL_print_error(errc);
+    // Print attributes of the first record
+    for (int i = 0; i < numRecords - 1; i++) {
+        errc = HFL_get_next_rec(fd, &recPtr);
+        if (errc != 0) HFL_print_error(errc);
+        // Print attributes of the next record
+    }
 
-//     // Delete all records with even IDs between 0 and 100
-//     for (int i = 0; i < 100; i++) {
-//         if (i % 2 == 0) {
-//         errc = HFL_delete_rec(fd, i);
-//         if (errc < 0) {
-//             HFL_print_error(errc);
-//         } else {
-//             numRecords--;
-//         }
-//     }
-//     }
+    // Try to retrieve the record with ID 2--it should be missing
+    errc = HFL_get_this_rec(fd, 2, &recPtr);
+    assert (errc != 0); // I modified here, from < to !=
 
-//     // Iterate through the records in the file a second time
-//     // to confirm that some have been deleted
-//     errc = HFL_get_first_rec(fd, &recPtr);
-//     if (errc < 0) HFL_print_error(errc);
-//     // Print attributes of the first record
-//     for (int i = 0; i < numRecords - 1; i++) {
-//         errc = HFL_get_next_rec(fd, &recPtr);
-//         if (errc < 0) HFL_print_error(errc);
-//         // Print attributes of the next record
-//     }
+    // Close the file
+    errc = HFL_close_file(fd);
+    if (errc != 0) HFL_print_error(errc);
 
-//     // Try to retrieve the record with ID 2--it should be missing
-//     errc = HFL_get_this_rec(fd, 2, &recPtr);
-//     assert (errc < 0);
-
-//     // Close the file
-//     errc = HFL_close_file(fd);
-//     if (errc < 0) HFL_print_error(errc);
-
-//     return 0;
-// }
+}
 
 /* Utility function for creating a record struct */
 record mkRecord(int attr1, int attr2, int attr3,

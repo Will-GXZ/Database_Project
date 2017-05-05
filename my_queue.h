@@ -17,3 +17,5 @@ int Q_isempty(void);
 void Q_clear(void); // reset queue 
 
 void Q_free(void);
+
+int Q_elementNum(void);

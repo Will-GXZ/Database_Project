@@ -25,6 +25,10 @@ int Q_isempty() {
     }
 }
 
+int Q_elementNum() {
+    return Qcount;
+}
+
 void Q_doubleCapacity() {
     int *temp = (int *)malloc(2 * Qcapacity * (sizeof(int)));
     memcpy(temp, queue, Qcapacity * sizeof(int));
