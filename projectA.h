@@ -5,7 +5,7 @@
 #define PROJECTA_H
 
 #define FRAMESIZE 4096
-#define BUFFERSIZE 50
+#define BUFFERSIZE 10
 #define LOCATIONSIZE 30
 #define INT_MAX 0x7fffffff
 #define ENTRYLENGTH 16

@@ -6,7 +6,7 @@
 #include "projectB.h"
 
 
-#define DEBUG
+// #define DEBUG
 
 scanner *scannerTable = NULL;
 
@@ -76,6 +76,7 @@ errCode HFL_close_file(fileDesc fd)
         BM_print_error(err);
         return -4;
     }
+    Q_clear();
 
     #ifdef DEBUG
         fprintf(stderr, "********* HFL_close_file: %d *********\n", fd);
@@ -95,6 +96,7 @@ recordID HFL_insert_rec(fileDesc fd, record* rec)
     int err = 0;
     int targetID = -1;
     block *targetPage = NULL;
+    char *map = (char *)malloc(pageCapacity * (sizeof(char)));
     // first, check if there is deleted recID
     if (! Q_isempty()) {
         targetID = Q_dequeue(); // insert new record to this recID
@@ -104,13 +106,14 @@ recordID HFL_insert_rec(fileDesc fd, record* rec)
         err = BM_get_this_block(fd, pageID, &targetPage);
         if (err != 0) {
             BM_print_error(err);
+            free(map);
             return -1;
         }
         // now we got target page : targetPage pointer
         if (targetPage->freeSpace == 0) { return -1; }// something wrong with queue 
-        char *map = (char *)malloc(pageCapacity * (sizeof(char)));
         get_mapArray(&map, targetPage);
         if (map[offset] == 1) { 
+            free(map);
             return -1; 
         } else {
             map[offset] = 1;
@@ -122,6 +125,7 @@ recordID HFL_insert_rec(fileDesc fd, record* rec)
         memcpy(targetPage->data + offset * ENTRYLENGTH, rec, sizeof(record));
         
         targetPage->freeSpace --;
+        targetPage->dirty = 1;
     } else {
         // allock new block, insert new record at first slot, and put all
         // rest recIDs of this new block in queue
@@ -129,6 +133,7 @@ recordID HFL_insert_rec(fileDesc fd, record* rec)
         err = BM_alloc_block(fd, &pageID);
         if (err != 0) {
             BM_print_error(err);
+            free(map);
             return -1;
         }
         targetID = pageID * pageCapacity + 0; // offset = 0
@@ -136,11 +141,12 @@ recordID HFL_insert_rec(fileDesc fd, record* rec)
         err = BM_get_this_block(fd, pageID, &targetPage);
         if (err != 0) {
             BM_print_error(err);
+            free(map);
             return -1;
         }
-        char *map = (char *)malloc(pageCapacity * (sizeof(char)));
         get_mapArray(&map, targetPage);
         targetPage->freeSpace --;
+        targetPage->dirty = 1;
         // update map and data freeSpace
         map[0] = 1;
         memcpy(targetPage->data + pageCapacity * ENTRYLENGTH , map, \
@@ -156,6 +162,7 @@ recordID HFL_insert_rec(fileDesc fd, record* rec)
             Q_enqueue(ID);
         }
     }
+    free(map);
 
     #ifdef DEBUG
         fprintf(stderr, "******** HFL_insert_rec: recID = %d ********\n", targetID);
@@ -181,8 +188,9 @@ errCode HFL_delete_rec(fileDesc fd, recordID rid)
     char *map = (char *)malloc(pageCapacity * (sizeof(char)));
     get_mapArray(&map, blockPtr);   
     if (map[offset] != 1) {
-        fprintf(stderr, "ERROR: Record with fd= %d, rid = %d doesn't exist.", \
+        fprintf(stderr, "HFL_delete_rec: Record with fd= %d, rid = %d doesn't exist.", \
             fd, rid);
+        free(map);
         return 0;
     }
     // update freeSpace information and map
@@ -191,9 +199,10 @@ errCode HFL_delete_rec(fileDesc fd, recordID rid)
     pageCapacity); // update map 
     *((int *)(blockPtr->data + (ENTRYLENGTH + 1) * pageCapacity)) -= 1;
     blockPtr->freeSpace ++;
-
+    blockPtr->dirty = 1;
     // enqueue deleted rid
     Q_enqueue(rid);
+    free(map);
 
     #ifdef DEBUG
         fprintf(stderr, "*********** HFL_delete_rec,  ID = %d ,fd = %d **********\n",\
@@ -253,6 +262,8 @@ errCode HFL_get_first_rec(fileDesc fd, record** rec)
     int rid = offset + pageCapacity * blockPtr->blockID;
     fdMetaTable[fd - 3].currentRecID = rid;
 
+    free(map);
+
     #ifdef DEBUG
         fprintf(stderr, "******** HFL_get_first_rec: fd = %d, rid = %d ********\n",\
              fd, rid);
@@ -292,6 +303,7 @@ errCode HFL_get_next_rec(fileDesc fd, record** rec)
             if (err != 0) {
                 BM_print_error(err);
                 printf("ERROR: HFL_get_next_rec, This is already the last record.\n");
+                free(map);
                 return -8;
             }
             if (blockPtr->freeSpace != pageCapacity) {
@@ -303,10 +315,10 @@ errCode HFL_get_next_rec(fileDesc fd, record** rec)
         // see if we have found proper block
         if (i == fdMetaTable[fd - 3].blockNumber) {
             printf("ERROR: HFL_get_next_rec, cannot find next rec.\n");
+            free(map);
             return -8;
         }
         // if we have found block, we then find offset.
-        char *map = (char *)malloc(pageCapacity * (sizeof(char)));
         get_mapArray(&map, blockPtr);
         for (int i = 0; i < pageCapacity; ++i)
         {
@@ -317,6 +329,7 @@ errCode HFL_get_next_rec(fileDesc fd, record** rec)
         }
         if (offset == -1) {
             printf("ERROR: HFL_get_next_rec, cannot find next rec.\n");
+            free(map);
             return -8;
         }
     }
@@ -326,6 +339,8 @@ errCode HFL_get_next_rec(fileDesc fd, record** rec)
     // update current RecID;
     int rid = blockPtr->blockID * pageCapacity + offset;
     fdMetaTable[fd - 3].currentRecID = rid;
+
+    free(map);
 
     #ifdef DEBUG
         fprintf(stderr, "********* HFL_get_next_rec, fd = %d, rid = %d *********\n",\
@@ -358,9 +373,12 @@ errCode HFL_get_this_rec(fileDesc fd, recordID rid, record** rec)
     get_mapArray(&map, blockPtr);
     if (map[offset] == -1) {
         printf("ERROR: HFL_get_this_rec, recordID = %d doesn't exist;\n", rid);
+        free(map);
         return -9;
     }
     memcpy(*rec, blockPtr->data + offset * ENTRYLENGTH, sizeof(record));
+
+    free(map);
 
     #ifdef DEBUG
         fprintf(stderr, "****** HFL_get_this_rec: ID: %d from fd: %d ******\n", \
@@ -435,7 +453,8 @@ errCode HFL_find_next_rec(scanDesc sd, record** rec)
     scannerTable[sd].currentRid = newRid;
 
     #ifdef DEBUG
-        fprintf(stderr, "*** scanDesc = %d is scanning to the next record ***\n", sd);
+        fprintf(stderr, "*** scanDesc = %d is scanning to the next record ***\n",\
+             sd);
     #endif
     return 0;
 }
@@ -458,8 +477,8 @@ errCode HFL_close_file_scan(scanDesc sd)
 void HFL_print_error(errCode ec)
 {
     if (ec == 0) { return; }
-    fprintf(stderr, "|-----------------------------------------|\n");
-    fprintf(stderr, "|             ERROR MESSAGES              |\n");
+    fprintf(stderr,     "|-----------------------------------------|\n");
+    fprintf(stderr,     "|             ERROR MESSAGES              |\n");
     if (ec == -2) {
         fprintf(stderr, "|          ERROR: HFL_create_file         |\n");
     }
@@ -476,7 +495,7 @@ void HFL_print_error(errCode ec)
         fprintf(stderr, "|         ERROR: HFL_get_next_rec         |\n");
     }
     if (ec == -9) {
-        fprintf(stderr, "|        ERROR: HFL_get_this_rec          |\n");
+        fprintf(stderr, "|         ERROR: HFL_get_this_rec         |\n");
     }
     if (ec == -11) {
         fprintf(stderr, "|        ERROR: HFL_find_next_rec         |\n");
@@ -484,10 +503,16 @@ void HFL_print_error(errCode ec)
     if (ec == -12) {
         fprintf(stderr, "|       ERROR: HFL_close_file_scan        |\n");
     }
-    fprintf(stderr, "|_________________________________________|\n");
+    fprintf(stderr,     "|_________________________________________|\n");
 }
 
-
+// release all memory allocated in heap, include HFL and BML
+void free_heap_memory() {
+    free(fdMetaTable);
+    free(bufferPool);
+    free(scannerTable);
+    Q_free();
+}
 
 
 

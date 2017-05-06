@@ -146,7 +146,6 @@ errCode buffer_add_block(block **block_2ptr, const void *data, fileDesc fd,\
 	}
 	if (blockID < fdMetaTable[fd - 3].firstBlockID || \
 		blockID > fdMetaTable[fd - 3].lastBlockID) {
-
 		printf("ERROR: blockID is not exist\n");
 		return 2;
 	}
@@ -242,6 +241,7 @@ fileDesc BM_open_file( const char *filename ) {
 }
 
 // close file using fd, write metadata, if fails, return 3.
+// reset blokcs of this fd in buffer pool
 errCode BM_close_file( fileDesc fd ) {
 	// scan buffer pool, see if there are still blocks of this file pinned
 	for (int i = 0; i < BUFFERSIZE; ++i) {
@@ -249,6 +249,23 @@ errCode BM_close_file( fileDesc fd ) {
 			if (bufferPool[i].pinCount != 0) {
 				printf("ERROR: BM_close_file, still pinned, cannot close.\n");
 				return 3; //still pinned, cannot close.
+			}
+		}
+	}
+	// if all blocks in buffer pool of this fd are unpinned, free data memory
+	// of them, reset block in buffer pool also
+	for (int i = 0; i < BUFFERSIZE; ++i)
+	{
+		if (bufferPool[i].fd == fd) {
+			if (bufferPool[i].data != NULL) {
+				free(bufferPool[i].data);
+				bufferPool[i].data = NULL;
+				bufferPool[i].dirty = 0;
+				bufferPool[i].fd = -1;
+				bufferPool[i].blockID = INT_MAX;
+				bufferPool[i].referenced = 0;
+				bufferPool[i].freeSpace = -1;
+				bufferPool[i].pinCount = 0;
 			}
 		}
 	}
@@ -827,14 +844,15 @@ errCode BM_unpin_block( block* blockPtr ) {
 	}
 	// unpin
 	blockPtr->pinCount = 0;
+	blockPtr->dirty = 0;
 
 	return 0;
 }
 
 void BM_print_error( errCode ec ) {
 	if (ec == 0) { return; }
-	fprintf(stderr, "|-----------------------------------------|\n");
-	fprintf(stderr, "|             ERROR MESSAGES              |\n");
+	fprintf(stderr,     "|-----------------------------------------|\n");
+	fprintf(stderr,     "|             ERROR MESSAGES              |\n");
 	if (ec == 1) { 
 		fprintf(stderr, "|           ERROR: BM_create_file         |\n");
 	}
@@ -865,7 +883,7 @@ void BM_print_error( errCode ec ) {
 	if (ec == 10) {
 		fprintf(stderr, "|          ERROR: BM_unpin_block          |\n");
 	}
-	fprintf(stderr, "|_________________________________________|\n");
+	fprintf(stderr,     "|_________________________________________|\n");
 }
 
 
