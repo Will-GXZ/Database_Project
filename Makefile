@@ -8,7 +8,7 @@
 CC      = gcc
 CFLAGS  =-std=gnu11 -Wall -Wextra -O0 -ggdb
 
-testB:	projectA.o projectB.o my_testB.o my_queue.o
+testB:	projectA.o projectB.o my_testB.o 
 	@echo '________________________________________________________________'
 	@echo '|                                                               |'
 	@echo '|                  Using Makefile to compile                    |'
@@ -19,12 +19,12 @@ testB:	projectA.o projectB.o my_testB.o my_queue.o
 	@echo '|               --To delete all, run make reset                 |'
 	@echo '|_______________________________________________________________|'
 	
-	${CC} ${CFLAGS} -o testB projectA.o projectB.o my_testB.o my_queue.o
+	${CC} ${CFLAGS} -o testB projectA.o projectB.o my_testB.o
 
-projectB.o: projectA.h projectB.c projectB.h record.h my_queue.h
+projectB.o: projectA.h projectB.c projectB.h record.h 
 my_testB.o: my_testB.c projectA.h projectB.h
 projectA.o: projectA.c projectA.h
-my_queue.o: my_queue.c my_queue.h
+
 
 testA:
 	make -f ./TestMakefileA # compile using Part A Makefile

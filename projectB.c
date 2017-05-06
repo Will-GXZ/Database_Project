@@ -26,9 +26,6 @@ void HFL_init()
     // after, initialize buffer manager
     BM_init();
 
-    // initialize the deleted recID queue
-    Q_init();
-
     #ifdef DEBUG
         printf("******* HFL_init ********\n");
     #endif
@@ -76,7 +73,6 @@ errCode HFL_close_file(fileDesc fd)
         BM_print_error(err);
         return -4;
     }
-    Q_clear();
 
     #ifdef DEBUG
         fprintf(stderr, "********* HFL_close_file: %d *********\n", fd);
@@ -88,90 +84,98 @@ void get_mapArray(char ** map, const block *blockPtr) {
     memcpy(*map, blockPtr->data + ENTRYLENGTH * pageCapacity, pageCapacity);
 }
 
-// When delete a record, put recID in a queue, when we insert a record, dequeue
-// a empty recordID, if queue is empty, alloc new block, add all new empty slot(rid)
-// in queue.
+// Using BM_get_first_block and BM_get_next_block scan each block to find
+// if there is empty space. if there is no space, allocate new block
 recordID HFL_insert_rec(fileDesc fd, record* rec)
 {
     int err = 0;
     int targetID = -1;
+    int offset = -1;
     block *targetPage = NULL;
     char *map = (char *)malloc(pageCapacity * (sizeof(char)));
-    // first, check if there is deleted recID
-    if (! Q_isempty()) {
-        targetID = Q_dequeue(); // insert new record to this recID
-        int pageID = targetID / pageCapacity;
-        int offset = targetID % pageCapacity;
-        // get target page from 
-        err = BM_get_this_block(fd, pageID, &targetPage);
-        if (err != 0) {
-            BM_print_error(err);
-            free(map);
-            return -1;
-        }
-        // now we got target page : targetPage pointer
-        if (targetPage->freeSpace == 0) { return -1; }// something wrong with queue 
-        get_mapArray(&map, targetPage);
-        if (map[offset] == 1) { 
-            free(map);
-            return -1; 
-        } else {
-            map[offset] = 1;
-            memcpy(targetPage->data + pageCapacity * ENTRYLENGTH , map, \
-                pageCapacity); // update map 
-        }
-        *((int *)(targetPage->data + (ENTRYLENGTH + 1) * pageCapacity)) -= 1;
-        // do insertion
-        memcpy(targetPage->data + offset * ENTRYLENGTH, rec, sizeof(record));
-        
-        targetPage->freeSpace --;
-        targetPage->dirty = 1;
-    } else {
-        // allock new block, insert new record at first slot, and put all
-        // rest recIDs of this new block in queue
-        int pageID = -1;
-        err = BM_alloc_block(fd, &pageID);
-        if (err != 0) {
-            BM_print_error(err);
-            free(map);
-            return -1;
-        }
-        targetID = pageID * pageCapacity + 0; // offset = 0
-        // insert at the first slot of this new page 
-        err = BM_get_this_block(fd, pageID, &targetPage);
-        if (err != 0) {
-            BM_print_error(err);
-            free(map);
-            return -1;
-        }
-        get_mapArray(&map, targetPage);
-        targetPage->freeSpace --;
-        targetPage->dirty = 1;
-        // update map and data freeSpace
-        map[0] = 1;
-        memcpy(targetPage->data + pageCapacity * ENTRYLENGTH , map, \
-            pageCapacity);
-        *((int *)(targetPage->data + (ENTRYLENGTH + 1) * pageCapacity)) -= 1;
-        // do insertion
-        memcpy(targetPage->data + 0 * ENTRYLENGTH, rec, sizeof(record));
-
-        // put the rest recordIDs in queue
-        for (int i = 1; i < pageCapacity; ++i)
+    // store currentID first
+    int currentIDBackup = fdMetaTable[fd - 3].currentID;
+    // scan from first block, if no block, alloc new block.
+    if (fdMetaTable[fd - 3].firstBlockID == -1)
+    {
+        err = BM_alloc_block(fd, &targetID);
+        if (err != 0)
         {
-            int ID = pageID * pageCapacity + i;
-            Q_enqueue(ID);
+            BM_print_error(err);
+            return -1;
         }
     }
-    free(map);
+    err = BM_get_first_block(fd, &targetPage);
+    if (err != 0) {
+        BM_print_error(err);
+        free(map);
+        return -1;
+    }
+    targetID = targetPage->blockID;
+    int lastID = fdMetaTable[fd - 3].lastBlockID;
+    // loop to find block that has free space
+    while(1) {
+        // check targetPage
+        if (targetPage->freeSpace > 0) {
+            break;
+        }
+        if (targetID == lastID) {
+            err = BM_alloc_block(fd, &targetID);
+            if (err != 0) {
+                BM_print_error(err);
+                free(map);
+                return -1;
+            }
+            BM_get_this_block(fd, targetID, &targetPage);
+            break;
+        }
+        // targetPage = nextPage
+        err = BM_get_next_block(fd, &targetPage);
+        if (err != 0)
+        {
+            BM_print_error(err);
+            free(map);
+            return -1;
+        }
+        targetID = targetPage->blockID;
+    }
+    // got targetPage, need to get offset of empty slot
+    get_mapArray(&map, targetPage);
+    int i = 0;
+    for (i = 0; i < pageCapacity; ++i)
+    {
+        if (map[i] == -1)
+        {
+            offset = i;
+            map[i] = 1; 
+            break;
+        }
+    }
+    if (i == pageCapacity) {
+        printf("ERROR: HFL_insert_rec, blockPtr->freeSpace is wrong.\n");
+        return -1;
+    }
+    // we got targetPage and offset, insert and update info
+    memcpy(targetPage->data + offset * ENTRYLENGTH, rec, sizeof(record));
+    memcpy(targetPage->data + pageCapacity * ENTRYLENGTH, map, pageCapacity);
+    *((int *)(targetPage->data + pageCapacity * (ENTRYLENGTH + 1))) += 1;
+    targetPage->freeSpace --;
+    targetPage->dirty = 1;
+
+    //restore currentID
+    fdMetaTable[fd - 3].currentID = currentIDBackup;
+
+    // calculate targetID;
+    targetID = targetPage->blockID * pageCapacity + offset;
 
     #ifdef DEBUG
         fprintf(stderr, "******** HFL_insert_rec: recID = %d ********\n", targetID);
     #endif
-
+    free(map);
     return targetID;
 }
 
-// calculate pageID and offset of input rid, and delete it, put deleted rid in queue
+// calculate pageID and offset of input rid, and delete it, update info
 errCode HFL_delete_rec(fileDesc fd, recordID rid)
 {
     // get page first
@@ -200,8 +204,6 @@ errCode HFL_delete_rec(fileDesc fd, recordID rid)
     *((int *)(blockPtr->data + (ENTRYLENGTH + 1) * pageCapacity)) -= 1;
     blockPtr->freeSpace ++;
     blockPtr->dirty = 1;
-    // enqueue deleted rid
-    Q_enqueue(rid);
     free(map);
 
     #ifdef DEBUG
@@ -511,7 +513,6 @@ void free_heap_memory() {
     free(fdMetaTable);
     free(bufferPool);
     free(scannerTable);
-    Q_free();
 }
 
 

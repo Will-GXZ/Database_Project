@@ -22,7 +22,6 @@ void test_HFL_init(void);
 void test_HFL_create_file(void);
 void test_HFL_open_file(void);
 void test_HFL_close_file(void);
-void test_my_queue(void);
 void test_get_mapArray(void);
 void test_HFL_insert_rec(void); // together with delete_rec and open
 void test_HFL_get_first_rec(void);
@@ -50,7 +49,6 @@ int main(void) {
     // test_HFL_create_file();
     // test_HFL_open_file();
     // test_HFL_close_file();
-    // test_my_queue();
     // test_get_mapArray();
     // test_HFL_insert_rec();
     // test_HFL_get_first_rec();
@@ -366,13 +364,14 @@ void test_HFL_get_next_rec() {
     int fd = HFL_open_file("test_file_name");
     // insert 500 records
     printf("********* insert 500 records *********\n");
-    // pause();
+    pause();
     for (int i = 0; i < 500; ++i)
     {
         record rec = mkRecord(i, i+1, 2*i, 'a', 'b', 'c', 'd');
         HFL_insert_rec(fd, &rec);
     }
     show_bufferPool();
+    show_fdMetaTable();
     printf("******* get 1st and next 100 *******\n");
     pause();
     record *r = (record *)malloc(sizeof(record));
@@ -428,13 +427,33 @@ void test_HFL_get_next_rec() {
     show_bufferPool();
     printf("********* add 5000 records, close the file, and reopen *********\n");
     pause();
-    for (int i = 500; i < 760; ++i)
+    for (int i = 0; i < 1940; ++i)
     {
         unpin_all();
         record rec = mkRecord(i, i+1, 2*i, 'a', 'b', 'c', 'd');
-        HFL_insert_rec(fd, &rec);
+        int id = HFL_insert_rec(fd, &rec);
+        err = HFL_get_this_rec(fd, id, &r);
+        print_rec(*r);
+        printf("\tid = %d\t", id);
     }
     show_bufferPool();
+
+
+
+    printf("\nadd 1 more rec\n");
+    pause();
+    unpin_all();
+    record rec = mkRecord(666, 6, 66, 'a', 'b', 'c', 'd');
+    int id = HFL_insert_rec(fd, &rec);
+    err = HFL_get_this_rec(fd, id, &r);
+    print_rec(*r);
+    printf("\tid = %d\t", id);
+    show_bufferPool();
+    show_fdMetaTable();
+    pause();
+
+
+
     unpin_all();
     HFL_close_file(fd);
     show_bufferPool();
@@ -449,12 +468,11 @@ void test_HFL_get_next_rec() {
     printf("\n");
     printf("*************** get next 5000 *************\n");
     pause();
-    for (int i = 0; i < 719; ++i)
+    for (int i = 0; i < 2400; ++i)
     {
         err = HFL_get_next_rec(fd, &r);
         HFL_print_error(err);
         print_rec(*r);
-        unpin_all();
     }
     printf("\n");
     show_bufferPool();
@@ -535,7 +553,7 @@ void test_HFL_insert_rec() {
          printf("%d ", data[i]);
     }
     printf("\nblock->freeSpace = %d\n", bufferPool[1].freeSpace);
-    printf("element number in queue = %d\n", Q_elementNum());
+
 ///////////////////////////////////////////////////////////////////
     printf("***************************************************\n");
     printf("simulate the situation that we deleted former records\n");
@@ -550,7 +568,7 @@ void test_HFL_insert_rec() {
         printf("%d  ", rid);
     } 
     printf("\nblock->freeSpace = %d\n", bufferPool[2].freeSpace);
-    printf("element number in queue = %d\n", Q_elementNum());
+
     show_bufferPool();
     unpin_all();
     HFL_close_file(3);
@@ -614,32 +632,7 @@ void show_bufferPool() {
     }
 }
 
-void test_my_queue() {
-    Q_init();
-    for (int i = 0; i < 200; ++i)
-    {
-        Q_enqueue(i);
-    }
-    for (int i = 0; i < 100; ++i)
-    {
-        int t = Q_dequeue();
-        printf("%d  ", t);
-    }
-    printf("\n****** still have 100 elements, insert 100 more ******\n");
-    for (int i = 0; i < 200; ++i)
-    {
-        Q_enqueue(i);
-    }
-    printf("\ndequeue all elements, should be from 100 to 199, and 0 to 99\n");
-    for (int i = 0; i < 200; ++i)
-    {
-        if (! Q_isempty()) {
-            int t = Q_dequeue();
-            printf("%d  ", t);
-        }
-    }
-    Q_free();  
-}
+
 
 void test_HFL_close_file() {
     printf(" should be no error message.\n");

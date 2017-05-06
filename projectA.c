@@ -330,7 +330,7 @@ boolean find_buffer_block(block **block_2ptr, fileDesc fd, int blockID) {
 			#ifdef DEBUG
 				printf("********* find_buffer_block, success. **********\n");
 			#endif
-
+			if (bufferPool[current - 1].pinCount == 0) { break; }
 			return 1;
 		}
 		current = (current == BUFFERSIZE) ? 1 : current + 1;

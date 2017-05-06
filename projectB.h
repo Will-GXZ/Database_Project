@@ -2,7 +2,6 @@
 /*Use reord.h to define your record struct
  */
 #include "record.h"
-#include "my_queue.h"
 
 #ifndef PROJECTB_H
 #define PROJECTB_H
@@ -75,7 +74,7 @@ void HFL_print_error(errCode ec);
 // get map array of a block
 void get_mapArray(char ** map, const block *);
 
-// release all memory allocated in heap, include HFL and BML and queue
+// release all memory allocated in heap, include HFL and BML 
 void free_heap_memory(void); 
 
 #endif  
