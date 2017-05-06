@@ -52,7 +52,13 @@ int main(void) {
     // test_get_mapArray();
     // test_HFL_insert_rec();
     // test_HFL_get_first_rec();
-    test_HFL_get_next_rec();   // test big number of records here
+    
+    //***************************************************
+    // test big number of records here                  *
+    // insert 50000 records, close, reopen, get_next.   *
+    //***************************************************
+    // test_HFL_get_next_rec();   
+
     // test_HFL_get_this_rec();
     // test_scanner();
 
@@ -64,7 +70,7 @@ int main(void) {
 //         valgrind --leak-check=full --show-leak-kinds=all \       //
 //                       --track-origins=yes'                       //
 //*******************************************************************/
-    // given_test_function();
+    given_test_function();
 
 
     return 0;
@@ -424,10 +430,9 @@ void test_HFL_get_next_rec() {
     HFL_print_error(err);
     print_rec(*r);
     printf("\n");
-    show_bufferPool();
-    printf("********* add 5000 records, close the file, and reopen *********\n");
+    printf("********* add 50000 records, close the file, and reopen *********\n");
     pause();
-    for (int i = 0; i < 1940; ++i)
+    for (int i = 0; i < 50000; ++i)
     {
         unpin_all();
         record rec = mkRecord(i, i+1, 2*i, 'a', 'b', 'c', 'd');
@@ -436,27 +441,8 @@ void test_HFL_get_next_rec() {
         print_rec(*r);
         printf("\tid = %d\t", id);
     }
-    show_bufferPool();
-
-
-
-    printf("\nadd 1 more rec\n");
-    pause();
-    unpin_all();
-    record rec = mkRecord(666, 6, 66, 'a', 'b', 'c', 'd');
-    int id = HFL_insert_rec(fd, &rec);
-    err = HFL_get_this_rec(fd, id, &r);
-    print_rec(*r);
-    printf("\tid = %d\t", id);
-    show_bufferPool();
-    show_fdMetaTable();
-    pause();
-
-
-
     unpin_all();
     HFL_close_file(fd);
-    show_bufferPool();
     printf("***** reopen file ******\n");
     fd = HFL_open_file("test_file_name");
     show_fdMetaTable();
@@ -466,16 +452,16 @@ void test_HFL_get_next_rec() {
     HFL_print_error(err);
     print_rec(*r);
     printf("\n");
-    printf("*************** get next 5000 *************\n");
+    printf("*************** get next 50000 *************\n");
     pause();
-    for (int i = 0; i < 2400; ++i)
+    for (int i = 0; i < 50000; ++i)
     {
+        unpin_all();
         err = HFL_get_next_rec(fd, &r);
         HFL_print_error(err);
         print_rec(*r);
     }
     printf("\n");
-    show_bufferPool();
 }
 
 void test_HFL_get_first_rec() {

@@ -173,7 +173,6 @@ errCode buffer_add_block(block **block_2ptr, const void *data, fileDesc fd,\
 
 				init_block(&bufferPool[current - 1]);
 				bufferPool[current - 1].freeSpace = freeSpace[0];
-				bufferPool[current - 1].pinCount ++;
 				bufferPool[current - 1].blockID = blockID;
 				bufferPool[current - 1].fd = fd;
 				bufferPool[current - 1].referenced = 1;

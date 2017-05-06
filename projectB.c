@@ -161,6 +161,7 @@ recordID HFL_insert_rec(fileDesc fd, record* rec)
     *((int *)(targetPage->data + pageCapacity * (ENTRYLENGTH + 1))) += 1;
     targetPage->freeSpace --;
     targetPage->dirty = 1;
+    targetPage->pinCount = 1;
 
     //restore currentID
     fdMetaTable[fd - 3].currentID = currentIDBackup;
@@ -204,6 +205,7 @@ errCode HFL_delete_rec(fileDesc fd, recordID rid)
     *((int *)(blockPtr->data + (ENTRYLENGTH + 1) * pageCapacity)) -= 1;
     blockPtr->freeSpace ++;
     blockPtr->dirty = 1;
+    blockPtr->pinCount = 1;
     free(map);
 
     #ifdef DEBUG
@@ -263,7 +265,7 @@ errCode HFL_get_first_rec(fileDesc fd, record** rec)
     // update currentRecID in metadata
     int rid = offset + pageCapacity * blockPtr->blockID;
     fdMetaTable[fd - 3].currentRecID = rid;
-
+    blockPtr->pinCount = 1;
     free(map);
 
     #ifdef DEBUG
@@ -341,7 +343,7 @@ errCode HFL_get_next_rec(fileDesc fd, record** rec)
     // update current RecID;
     int rid = blockPtr->blockID * pageCapacity + offset;
     fdMetaTable[fd - 3].currentRecID = rid;
-
+    blockPtr->pinCount = 1;
     free(map);
 
     #ifdef DEBUG
@@ -379,7 +381,7 @@ errCode HFL_get_this_rec(fileDesc fd, recordID rid, record** rec)
         return -9;
     }
     memcpy(*rec, blockPtr->data + offset * ENTRYLENGTH, sizeof(record));
-
+    blockPtr->pinCount = 1;
     free(map);
 
     #ifdef DEBUG
