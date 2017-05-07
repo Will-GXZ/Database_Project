@@ -177,14 +177,19 @@ I changed a little bit for part A when I implemented this part.
 #### 4. Other Implementing Details
 
   * Calculation of RecordID
+
       In my implementation, I just need to set variable `ENTRYLENGTH` (which is 16 in this case), and the program will calculate `pageCapacity` (which is 240 in this case) automatically. Then, when we want to insert a new record in block a with `blockID` at `offset` position, we can calculate `recordID` using the following equation:
       
                 `recordID = blockID * pageCapacity + offset ;`
+
   * Record insertion strategy
+
       Loop to scan from first page to next, see if there is free space in a page. If there is no page in the file or all pages are full, call `BM_alloc_block()` to create a new page, and insert record in this new page.
       
   * How did I deal with multiple scanDesc
+
       To handle multiple scanDesc, I defined a struct scanner and a dynamic array of scanner:
+
   ```
     typedef int scanDesc;
   
@@ -195,6 +200,7 @@ I changed a little bit for part A when I implemented this part.
     
     extern scanner *scannerTable;
   ```
+  
   Each scanDesc is map to a scanner in the array, such that we can store `fd` and `current record ID` of each scanDesc.
 
 #### 5. Test Cases
