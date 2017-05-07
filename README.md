@@ -190,16 +190,16 @@ I changed a little bit for part A when I implemented this part.
 
     To handle multiple scanDesc, I defined a struct scanner and a dynamic array of scanner:
 
-  ```
-    typedef int scanDesc;
-  
-    typedef struct _scanner {
-        fileDesc fd;
-        int currentRid;
-    } scanner;
+    ```
+      typedef int scanDesc;
     
-    extern scanner *scannerTable;
-  ```
+      typedef struct _scanner {
+          fileDesc fd;
+          int currentRid;
+      } scanner;
+      
+      extern scanner *scannerTable;
+    ```
 
     Each scanDesc is map to a scanner in the array, such that we can store `fd` and `current record ID` of each scanDesc.
 
