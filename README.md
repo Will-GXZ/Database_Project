@@ -170,7 +170,7 @@ I changed a little bit for part A when I implemented this part.
 
   2.  Added a parameter of `int *blockID` in `BM_alloc_block()`,  after allocate new block, store the new blockID like this :
 
-      `*blockID = newBlockID;`
+            *blockID = newBlockID ;
 
   Such that we can immediately know the ID of the new allocated block. 
 
@@ -180,7 +180,7 @@ I changed a little bit for part A when I implemented this part.
 
     In my implementation, I just need to set variable `ENTRYLENGTH` (which is 16 in this case), and the program will calculate `pageCapacity` (which is 240 in this case) automatically. Then, when we want to insert a new record in block a with `blockID` at `offset` position, we can calculate `recordID` using the following equation:
       
-                `recordID = blockID * pageCapacity + offset ;`
+                recordID = blockID * pageCapacity + offset ;
 
   * Record insertion strategy
 
