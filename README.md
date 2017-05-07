@@ -89,19 +89,19 @@ To compile this part for testing purpose, make sure you have all the files in th
    2.  File Organization
    In my implementation, I choose to use the **page directory** strategy to implement **heap file** organization. Specifically, the program  will store each page as a small file of 4096 bytes in disk, and for each database file,  maintain a series of header page as data pages' directory. Also, as I mentioned above, the program will maintain a metadata page for each database file in disk.
 
-  Detailed roganization:
+   Detailed roganization:
     
-    *   Header Page
+   *   Header Page
 
-        ![Header page organization diagram](https://dl.dropboxusercontent.com/s/2xztywx1dmrqjtr/comp115proj_header.jpg?dl=0 )
-    
-    *   Data page
+  ![Header page organization diagram](https://dl.dropboxusercontent.com/s/2xztywx1dmrqjtr/comp115proj_header.jpg?dl=0 )
 
-        ![Data page organization diagram](https://dl.dropboxusercontent.com/s/xcx9apto2sd70xg/comp115proj_page.jpg?dl=0)
-   
-    *   Metadata page
+   *   Data page
 
-        ![Metadata page orgnization diagram](https://dl.dropboxusercontent.com/s/ahw67mb6mo9jbva/comp115proj_meta.jpg?dl=0)
+  ![Data page organization diagram](https://dl.dropboxusercontent.com/s/xcx9apto2sd70xg/comp115proj_page.jpg?dl=0)
+ 
+   *   Metadata page
+
+  ![Metadata page orgnization diagram](https://dl.dropboxusercontent.com/s/ahw67mb6mo9jbva/comp115proj_meta.jpg?dl=0)
   
    3. Naming
    * Header pages   : (filename)_h(headerID).head
