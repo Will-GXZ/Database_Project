@@ -170,7 +170,7 @@ I changed a little bit for part A when I implemented this part.
 
   2.  Added a parameter of `int *blockID` in `BM_alloc_block()`,  after allocate new block, store the new blockID like this :
 
-  `*blockID = newBlockID;`
+      `*blockID = newBlockID;`
 
   Such that we can immediately know the ID of the new allocated block. 
 
