@@ -43,11 +43,12 @@ To compile this part for testing purpose, make sure you have all the files in th
 
 ### Details
 #### Buffer Management
-    1.  Buffer Pool Structure
-    This program use a dynamic array as data structure, each slot of the array stores a block structure.
+   Buffer Pool Structure
+   This program use a dynamic array as data structure, each slot of the array stores a block structure.
      
-     The definition of the array and block: 
-     ``` 
+   The definition of the array and block: 
+    
+```
     typedef struct _block{
             int pinCount;
             int dirty;
@@ -60,7 +61,7 @@ To compile this part for testing purpose, make sure you have all the files in th
     } block;
     block *bufferPool = (block *)malloc(BUFFERSIZE * sizeof(block));
      
-     ```
+```
 #### Buffer Pool Replacement Policy
    In my project, I choose to use a variant of LRU, called **clock** replacement, which is mentioned in text book. The implementation of this replacement policy is in `buffer_add_block` function in *projectA.c* file. I also write a well commented **test function** in *my_test.c* to test my implementation.
    
@@ -69,6 +70,7 @@ To compile this part for testing purpose, make sure you have all the files in th
    In my work, I define a metadata structure to store information of each opened file. And I use a direct address table to store all metadata structures. In the meantime, maintain a metadata page for each file in disk. When we open a file, read in its metadata page, store metadata in memory. When we close a file, write back metadata accordingly.
    
      This is my definition of metadata structure:
+     
    ```
     typedef struct _metadata {
         int currentID; // the blockID that is current in use
@@ -82,7 +84,7 @@ To compile this part for testing purpose, make sure you have all the files in th
     } metadata;
     max_fd = rlim.rlim_cur - 3; //because fd = 0, 1, 2 don't count.
     fdMetaTable = (metadata *)malloc(max_fd * sizeof(metadata));
-    ```
+  ```
 
    2.  File Organization
    In my implementation, I choose to use the **page directory** strategy to implement **heap file** organization. Specifically, the program  will store each page as a small file of 4096 bytes in disk, and for each database file,  maintain a series of header page as data pages' directory. Also, as I mentioned above, the program will maintain a metadata page for each database file in disk.
