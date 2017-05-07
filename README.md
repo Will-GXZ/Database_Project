@@ -178,17 +178,17 @@ I changed a little bit for part A when I implemented this part.
 
   * Calculation of RecordID
 
-      In my implementation, I just need to set variable `ENTRYLENGTH` (which is 16 in this case), and the program will calculate `pageCapacity` (which is 240 in this case) automatically. Then, when we want to insert a new record in block a with `blockID` at `offset` position, we can calculate `recordID` using the following equation:
+    In my implementation, I just need to set variable `ENTRYLENGTH` (which is 16 in this case), and the program will calculate `pageCapacity` (which is 240 in this case) automatically. Then, when we want to insert a new record in block a with `blockID` at `offset` position, we can calculate `recordID` using the following equation:
       
                 `recordID = blockID * pageCapacity + offset ;`
 
   * Record insertion strategy
 
-      Loop to scan from first page to next, see if there is free space in a page. If there is no page in the file or all pages are full, call `BM_alloc_block()` to create a new page, and insert record in this new page.
+    Loop to scan from first page to next, see if there is free space in a page. If there is no page in the file or all pages are full, call `BM_alloc_block()` to create a new page, and insert record in this new page.
       
   * How did I deal with multiple scanDesc
 
-      To handle multiple scanDesc, I defined a struct scanner and a dynamic array of scanner:
+    To handle multiple scanDesc, I defined a struct scanner and a dynamic array of scanner:
 
   ```
     typedef int scanDesc;
@@ -200,8 +200,8 @@ I changed a little bit for part A when I implemented this part.
     
     extern scanner *scannerTable;
   ```
-  
-  Each scanDesc is map to a scanner in the array, such that we can store `fd` and `current record ID` of each scanDesc.
+
+    Each scanDesc is map to a scanner in the array, such that we can store `fd` and `current record ID` of each scanDesc.
 
 #### 5. Test Cases
 To make sure each of my functions works properly, I wrote unit tests for them. In my test functions, I intentionally tested **boundary cases**, like inserting a record when all pages are full, scan records with some of records deleted or try to get a record with a nonexistent recordID. I also tested if my program can have **multiple scans** running together with no influence to each other (in my `test_scanner()` function).  In addition, I wrote a function called `test_HFL_get_next_rec()` to test if my program can work with a **large number of records** (I tested for 50000 records, insert them, close the file, reopen the file, and scan them).
