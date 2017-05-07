@@ -1,3 +1,10 @@
+/*  Comp115 Final Project, 2017 Spring
+ *  
+ *  UserName:    XGUO04
+ *  StudentName: Xiaozheng Guo
+ *  Created at:  Mar, 2017
+*/
+
 #include <assert.h>
 #include <memory.h>
 
@@ -84,7 +91,7 @@ int main(void) {
 void Memory_test() {
     int err = 0;
     block *blockPtr = NULL;
-
+    int blockID = 0;
     // initialize buffer manager
     BM_init();
 
@@ -101,7 +108,7 @@ void Memory_test() {
     {
         for (int j = 0; j < 3; ++j)
         {
-            err = BM_alloc_block(fds[j]);
+            err = BM_alloc_block(fds[j], &blockID);
             BM_print_error(err);
             assert(err == 0);
         }
@@ -161,6 +168,7 @@ void Memory_test() {
 // this is the given test main function
 int given_test_main(void) {
     int err = 0;
+    int blockID = 0;
     /*
     bm init
     */
@@ -174,7 +182,7 @@ int given_test_main(void) {
     */
     BM_create_file("testing.dat");
     fileDesc fd = BM_open_file("testing.dat");
-    BM_alloc_block(fd);
+    BM_alloc_block(fd, &blockID);
     block* blockPtr=NULL;
     
     BM_get_first_block(fd, &blockPtr); // this function will assign blockPtr to a valid block from the BP
@@ -201,7 +209,7 @@ int given_test_main(void) {
     fd = BM_open_file("testing.dat");
     int i;
     for (i = 0; i < 99; i++) {
-        BM_alloc_block(fd);
+        BM_alloc_block(fd, &blockID);
     }
     err = BM_get_first_block(fd, &blockPtr);
     BM_print_error(err);
@@ -332,13 +340,14 @@ int given_test_main(void) {
 
 void test_BM_dispose_block() {
     int err = 0;
+    int blockID = 0;
     BM_init();
     BM_create_file("t1");
     int fd = BM_open_file("t1"); 
     for (int i = 0; i < 10000 ; ++i)
     {
         printf("%d ", i);
-        err = BM_alloc_block(fd);
+        err = BM_alloc_block(fd, &blockID);
         BM_print_error(err);
         assert(err == 0);
     }
@@ -359,13 +368,14 @@ void test_BM_dispose_block() {
 
 void test_get_prev_ID() {
     int err = 0;
+    int blockID = 0;
     BM_init();
     BM_create_file("t1");
     int fd = BM_open_file("t1");\
     for (int i = 0; i < 10000 ; ++i)
     {
         printf("%d ", i);
-        err = BM_alloc_block(fd);
+        err = BM_alloc_block(fd, &blockID);
         BM_print_error(err);
         assert(err == 0);
     }
@@ -379,6 +389,7 @@ void test_get_prev_ID() {
 
 void test_get_next_ID() {
     int err = 0;
+    int blockID = 0;
     BM_init();
     BM_create_file("t1");
     int fd = BM_open_file("t1");
@@ -386,7 +397,7 @@ void test_get_next_ID() {
     for (int i = 0; i < 10000 ; ++i)
     {
         printf("%d ", i);
-        err = BM_alloc_block(fd);
+        err = BM_alloc_block(fd, &blockID);
         BM_print_error(err);
         assert(err == 0);
     }
@@ -401,6 +412,7 @@ void test_get_next_ID() {
 void test_BM_unpin_block() {
     int err = 0;
     BM_init();
+    int blockID = 0;
     BM_create_file("t1");
     int fd = BM_open_file("t1");
     block *blockPtr = NULL;
@@ -408,7 +420,7 @@ void test_BM_unpin_block() {
     for (int i = 0; i < 10 ; ++i)
     {
         printf("%d ", i);
-        err = BM_alloc_block(fd);
+        err = BM_alloc_block(fd, &blockID);
         BM_print_error(err);
         assert(err == 0);
     }
@@ -439,6 +451,7 @@ void test_BM_unpin_block() {
 
 void test_get_next_block() {
     int err = 0;
+    int blockID = 0;
     BM_init();
     BM_create_file("t1");
     int fd = BM_open_file("t1");
@@ -446,7 +459,7 @@ void test_get_next_block() {
     for (int i = 0; i < 5000; ++i)
     {
         printf("%d ", i);
-        err = BM_alloc_block(fd);
+        err = BM_alloc_block(fd, &blockID);
         BM_print_error(err);
         assert(err == 0);
     }
@@ -477,6 +490,7 @@ void test_get_next_block() {
 
 void test_get_first_block() {
     int err = 0;
+    int blockID;
     BM_init();
     BM_create_file("t1");
     int fd = BM_open_file("t1");
@@ -484,7 +498,7 @@ void test_get_first_block() {
     for (int i = 0; i < 100; ++i)
     {
         printf("%d ", i);
-        err = BM_alloc_block(fd);
+        err = BM_alloc_block(fd, &blockID);
         BM_print_error(err);
         assert(err == 0);
     }
@@ -501,13 +515,14 @@ void test_get_first_block() {
 // continuiously allocate 20 000 new block
 void test_BM_alloc_block10000() {
     int err = 0;
+    int blockID;
     BM_init();
     BM_create_file("t1");
     int fd = BM_open_file("t1");
     show_fdMetaTable();
 
     for (int i = 0; i < 20000; ++i) {
-        err = BM_alloc_block(fd);
+        err = BM_alloc_block(fd, &blockID);
         BM_print_error(err);
         assert(err == 0);
         printf("            %d\n", i);
@@ -525,18 +540,19 @@ void test_BM_alloc_block10000() {
 void test_BM_alloc_block() {
     int err = 0;
     BM_init();
+    int blockID;
     BM_create_file("t1");
     int fd = BM_open_file("t1");
     show_fdMetaTable();
 
     // test for invalid fd.
     printf("\n\n=============== test for invalid fd ================\n\n");
-    err = BM_alloc_block(4);
+    err = BM_alloc_block(4, &blockID);
     BM_print_error(err);
 
     // test: 1st header page has free space
     printf("\n\n======== test: 1st header file has free space =======\n\n");
-    err = BM_alloc_block(fd);
+    err = BM_alloc_block(fd, &blockID);
     BM_print_error(err);
     show_fdMetaTable();
 
@@ -561,7 +577,7 @@ void test_BM_alloc_block() {
     fclose(fp);
     fp = NULL;
 
-    err = BM_alloc_block(fd);
+    err = BM_alloc_block(fd, &blockID);
     BM_print_error(err);
     show_fdMetaTable();
 
@@ -576,7 +592,7 @@ void test_BM_alloc_block() {
     fclose(fp);
     fp = NULL;
 
-    err = BM_alloc_block(fd);
+    err = BM_alloc_block(fd, &blockID);
     BM_print_error(err);
     show_fdMetaTable();
 
@@ -586,11 +602,12 @@ void test_get_this_block() {
     int err;
     BM_init();
     BM_create_file("t1");
+    int blockID;
     int fd = BM_open_file("t1");
     // create new blocks to test
     for (int i = 0; i < 100; ++i)
     {
-        err = BM_alloc_block(fd);
+        err = BM_alloc_block(fd, &blockID);
         BM_print_error(err);
     }
     show_fdMetaTable();
@@ -728,6 +745,7 @@ void test_BM_close_file() {
 void test_buffer_add_block() {
     //Modify attributes of blocks to test
     BM_init();
+    int blockID;
     BM_create_file("t1");
     int fd = BM_open_file("t1");
     show_fdMetaTable();
@@ -736,7 +754,7 @@ void test_buffer_add_block() {
     // create new blocks to test
     for (int i = 0; i < 100; ++i)
     {
-        err = BM_alloc_block(fd);
+        err = BM_alloc_block(fd, &blockID);
         BM_print_error(err);
     }
 

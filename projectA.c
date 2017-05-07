@@ -1,3 +1,11 @@
+/*  Comp115 Final Project, 2017 Spring
+ *  
+ *  UserName:    XGUO04
+ *  StudentName: Xiaozheng Guo
+ *  Created at:  Mar, 2017
+*/
+
+
 #include <assert.h>
 #include <memory.h>
 #include <sys/resource.h>

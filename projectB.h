@@ -1,3 +1,10 @@
+/*  Comp115 Final Project, 2017 Spring
+ *  
+ *  UserName:    XGUO04
+ *  StudentName: Xiaozheng Guo
+ *  Created at:  April, 2017
+*/
+
 
 /*Use reord.h to define your record struct
  */

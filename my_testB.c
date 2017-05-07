@@ -1,3 +1,10 @@
+/*  Comp115 Final Project, 2017 Spring
+ *  
+ *  UserName:    XGUO04
+ *  StudentName: Xiaozheng Guo
+ *  Created at:  April, 2017
+*/
+
 #include <assert.h>
 #include <string.h>
 #include "projectA.h"
@@ -45,7 +52,7 @@ int main(void) {
 //  Unit test functions, some of them also test for other functions //
 //                                                                  //
 //*******************************************************************/
-    // test_HFL_init()
+    // test_HFL_init();
     // test_HFL_create_file();
     // test_HFL_open_file();
     // test_HFL_close_file();
@@ -53,13 +60,14 @@ int main(void) {
     // test_HFL_insert_rec();
     // test_HFL_get_first_rec();
     
-    //***************************************************
-    // test big number of records here                  *
-    // insert 50000 records, close, reopen, get_next.   *
-    //***************************************************
+//***************************************************
+// test big number of records here                  *
+// insert 50000 records, close, reopen, get_next.   *
+//***************************************************
     // test_HFL_get_next_rec();   
 
     // test_HFL_get_this_rec();
+   
     // test_scanner();
 
 
@@ -269,6 +277,7 @@ void test_scanner() {
     printf("\n******* close s1 **********\n");
     pause();
     HFL_close_file_scan(s1);
+    printf("******** see if s1 is closed, should print error message ********\n");
     err = HFL_find_next_rec(s1, &r);
     HFL_print_error(err);
     print_rec(*r);
@@ -293,7 +302,8 @@ void test_scanner() {
     {
         HFL_delete_rec(fd, i);
     }
-    printf("using new s1 scan all records\n");
+    printf("*********************************************\n");
+    printf("using new s1 scan 500 times ,should print error meesage\n");
     pause();
     s1 = HFL_open_file_scan(fd);
     for (int i = 0; i < 500; ++i)
@@ -522,9 +532,9 @@ void unpin_all() {
 }
 
 void test_HFL_insert_rec() {
-    int err = 0;
     HFL_init();
-    err = HFL_create_file("test_file_name");
+    int err = HFL_create_file("test_file_name");
+    HFL_print_error(err);
     int fd = HFL_open_file("test_file_name");
     for (int i = 0; i < 450; ++i)
     {
