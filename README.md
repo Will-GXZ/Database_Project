@@ -5,6 +5,11 @@
 Language: C
 
 Created at Mar 31, 2017
+
+Finishied at May 10, 2017
+
+___________________________
+*This is my final project of comp115 Database Systems. Implemented the Buffer Layer and the Heap File Layer of a dadabase system.*
 ____________________________
 
 ### Acknowledgements
